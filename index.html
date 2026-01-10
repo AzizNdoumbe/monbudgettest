@@ -1,0 +1,2062 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mon Budget</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Budget">
+    <meta name="theme-color" content="#6366F1">
+    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIk1vbiBCdWRnZXQiLAogICJzaG9ydF9uYW1lIjogIkJ1ZGdldCIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgInN0YXJ0X3VybCI6ICIuLyIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiI2ZmZmZmZiIsCiAgInRoZW1lX2NvbG9yIjogIiM2MzY2RjEiLAogICJpY29ucyI6IFsKICAgIHsKICAgICAgInNyYyI6ICJkYXRhOmltYWdlL3N2Zyt4bWw7YmFzZTY0LFBITjJaeUI0Yld4dWN6MGlhSFIwY0RvdkwzZDNkeTUzTXk1dmNtY3ZNakF3TUM5emRtY2lJSGRwWkhSb1BTSXlOVFlpSUdobGFXZG9kRDBpTWpVMklqNDhjbVZqZENCM2FXUjBhRDBpTWpVMklpQm9aV2xuYUhROUlqSTFOaUlnWm1sc2JEMGlJell6TmpaR01TSXZQanh3WVhSb0lHUTlJazB4TWpnZ09EQmpNQ0F5TkMweE9TQXlOQzAwTUNBd2N5MDBNQzB4TmkweE9TMHhOaUF4T1NBd0lEUXdJREUySURFMklERTJJREV6TGpVZ01qUXVOVWd5TlRKak1UQXVOU0F3SURFM0xqVXROeUF4Tnkwek9DNHhMVGt1TnkweExqSXRNaTQxTFRJdU55MDBMamN0TkM0eExUWXRPQzQwTFRndU5DMDRMalJJTlRaakxUSXVOUzB4TkMweE55MHlNUzQxTFRRd0xUSTBjeTB6Tnk0MUlERXdMalV0TkRBZ01qUmFJaUJtYVd4c1BTSWpabVptSWk4K1BDOXpkbWMrIiwKICAgICAgInNpemVzIjogImFueSIsCiAgICAgICJ0eXBlIjogImltYWdlL3N2Zyt4bWwiCiAgICB9CiAgXQp9">
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNTYiIGhlaWdodD0iMjU2Ij48cmVjdCB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgZmlsbD0iIzYzNjZGMSIvPjxwYXRoIGQ9Ik0xMjggODBjMCAyNC0xOSAyNC00MCAwcy00MC0xNi0xOS0xNiAxOSAwIDQwIDE2IDE2IDEzLjUgMjQuNUgyNTJjMTAuNSAwIDE3LjUtNyAxNy0zOC4xLTkuNy0xLjItMi41LTIuNy00LjEtNi04LjQtOC40LTguNEg1NmMtMi41LTE0LTE3LTIxLjUtNDAtMjRzLTM3LjUgMTAuNS00MCAyNFoiIGZpbGw9IiNmZmYiLz48L3N2Zz4=">
+    
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+      }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <script>
+      // Configuration Firebase
+      const firebaseConfig = {
+        apiKey: "AIzaSyAr-ZeoQ_IfmbPTlGSXN1AxoiJAODRCaTM",
+        authDomain: "budget-ebe8d.firebaseapp.com",
+        projectId: "budget-ebe8d",
+        storageBucket: "budget-ebe8d.firebasestorage.app",
+        messagingSenderId: "671712360301",
+        appId: "1:671712360301:web:fe430143abf41f30bc4c64"
+      };
+      
+      // Initialiser Firebase
+      firebase.initializeApp(firebaseConfig);
+      const auth = firebase.auth();
+      const db = firebase.firestore();
+    </script>
+    
+    <style>
+      /* Empêcher le zoom sur iOS */
+      body {
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
+      }
+      input, textarea, select {
+        -webkit-user-select: text;
+      }
+      /* Style pour app en plein écran */
+      @media (display-mode: standalone) {
+        body {
+          padding-top: env(safe-area-inset-top);
+          padding-bottom: env(safe-area-inset-bottom);
+        }
+      }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+        
+        // Icônes SVG simplifiées
+        const PlusCircle = ({ size = 24 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+            </svg>
+        );
+        const TrendingDown = ({ size = 24 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/>
+            </svg>
+        );
+        const Wallet = ({ size = 24 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/>
+            </svg>
+        );
+        const Target = ({ size = 24 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
+            </svg>
+        );
+        const AlertCircle = ({ size = 24 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+        );
+        const Calendar = ({ size = 24 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+        );
+        const PieChart = ({ size = 24 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/>
+            </svg>
+        );
+        const List = ({ size = 24 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+            </svg>
+        );
+        const Bell = ({ size = 24 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+        );
+        const Moon = ({ size = 24 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+        );
+        const Sun = ({ size = 24 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+            </svg>
+        );
+        const Settings = ({ size = 24 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6m5.2-13.2l-3.4 3.4M10.2 13.8l-3.4 3.4m11.2 0l-3.4-3.4M10.2 10.2L6.8 6.8m11.2 0l-3.4 3.4M10.2 13.8l-3.4-3.4M12 1a9 9 0 0 1 9 9 9 9 0 0 1-9 9 9 9 0 0 1-9-9 9 9 0 0 1 9-9z"/>
+            </svg>
+        );
+
+        const BudgetTracker = () => {
+          // États Firebase
+          const [user, setUser] = useState(null);
+          const [loading, setLoading] = useState(true);
+          const [syncing, setSyncing] = useState(false);
+          const saveTimeoutRef = useRef(null);
+          const initialLoadRef = useRef(true);
+          
+          const [monthlyBudget, setMonthlyBudget] = useState({
+            revenus: 1355,
+            chargesfixes: 0,
+            jourPaiementSalaire: 24, // Jour du mois où le salaire arrive
+            categories: {
+              copine: { nom: "Capucine", budget: 230, color: "#FF6B9D", showInDashboard: true },
+              perso: { nom: "Dépenses perso", budget: 80, color: "#FFA07A", showInDashboard: true },
+              pea: { nom: "PEA", budget: 100, color: "#4ECDC4", showInDashboard: true },
+              crypto: { nom: "Crypto", budget: 53, color: "#95E1D3", showInDashboard: true }
+            }
+          });
+
+          const [view, setView] = useState('dashboard');
+          const [soldeCompte, setSoldeCompte] = useState(0);
+          const [soldePEA, setSoldePEA] = useState(0);
+          const [soldeCrypto, setSoldeCrypto] = useState(0);
+          const [depenses, setDepenses] = useState([]);
+          const [chargesFixesAuto, setChargesFixesAuto] = useState([]);
+          const [chargesPayees, setChargesPayees] = useState({});
+          const [showAddForm, setShowAddForm] = useState(false);
+          const [showChargesForm, setShowChargesForm] = useState(false);
+          const [showChargesModal, setShowChargesModal] = useState(false);
+          const [showRevenuForm, setShowRevenuForm] = useState(false);
+          const [showCategoryDetail, setShowCategoryDetail] = useState(null);
+          const [notifications, setNotifications] = useState([]);
+          const [newDepense, setNewDepense] = useState({
+            categorie: 'copine',
+            montant: '',
+            description: '',
+            date: new Date().toISOString().split('T')[0],
+            deduireDuSolde: true
+          });
+          const [newCharge, setNewCharge] = useState({
+            nom: '',
+            montant: '',
+            jourPaiement: 1
+          });
+          const [newRevenu, setNewRevenu] = useState({
+            type: 'Salaire',
+            montant: ''
+          });
+          const [editingCharge, setEditingCharge] = useState(null);
+          const [editMontant, setEditMontant] = useState('');
+          const [darkMode, setDarkMode] = useState(false);
+          
+          const chartRef = useRef(null);
+          const chartInstance = useRef(null);
+
+          // Écouter l'état d'authentification Firebase
+          useEffect(() => {
+            const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
+              setUser(currentUser);
+              
+              if (currentUser) {
+                // Migration automatique depuis localStorage vers Firestore
+                const localData = localStorage.getItem('budgetTrackerData');
+                if (localData) {
+                  try {
+                    const userDoc = await db.collection('users').doc(currentUser.uid).collection('data').doc('budget').get();
+                    
+                    if (!userDoc.exists) {
+                      // Première connexion : migrer les données
+                      const data = JSON.parse(localData);
+                      await db.collection('users').doc(currentUser.uid).collection('data').doc('budget').set(data);
+                      console.log('✅ Migration localStorage → Firestore réussie');
+                    }
+                  } catch (error) {
+                    console.error('Erreur migration:', error);
+                  }
+                }
+              }
+              
+              setLoading(false);
+            });
+            
+            // Demander la permission pour les notifications
+            if ("Notification" in window && Notification.permission === "default") {
+              Notification.requestPermission();
+            }
+            
+            return () => unsubscribe();
+          }, []);
+
+          // Charger les données depuis Firestore en temps réel
+          useEffect(() => {
+            if (!user) return;
+            
+            const unsubscribe = db.collection('users')
+              .doc(user.uid)
+              .collection('data')
+              .doc('budget')
+              .onSnapshot((doc) => {
+                if (doc.exists) {
+                  const data = doc.data();
+                  
+                  // Marquer qu'on est en train de charger depuis Firestore
+                  initialLoadRef.current = true;
+                  
+                  setSoldeCompte(data.soldeCompte || 0);
+                  setSoldePEA(data.soldePEA || 0);
+                  setSoldeCrypto(data.soldeCrypto || 0);
+                  setDepenses(data.depenses || []);
+                  setChargesFixesAuto(data.chargesFixesAuto || []);
+                  setChargesPayees(data.chargesPayees || {});
+                  setDarkMode(data.darkMode || false);
+                  if (data.monthlyBudget) {
+                    setMonthlyBudget(data.monthlyBudget);
+                  }
+                  
+                  // Après 200ms, on peut sauvegarder à nouveau
+                  setTimeout(() => {
+                    initialLoadRef.current = false;
+                  }, 200);
+                }
+              }, (error) => {
+                console.error('Erreur chargement Firestore:', error);
+              });
+            
+            return () => unsubscribe();
+          }, [user]);
+
+          // Sauvegarder darkMode séparément (sans indicateur de sync)
+          useEffect(() => {
+            if (!user) return;
+            if (initialLoadRef.current) return;
+            
+            db.collection('users')
+              .doc(user.uid)
+              .collection('data')
+              .doc('budget')
+              .set({ darkMode }, { merge: true })
+              .catch((error) => console.error('Erreur sauvegarde darkMode:', error));
+          }, [user, darkMode]);
+
+          // Sauvegarder dans Firestore avec debounce et évitement de boucle
+          useEffect(() => {
+            if (!user) return;
+            if (initialLoadRef.current) return; // Ne pas sauvegarder si on vient de charger
+            
+            // Annuler la sauvegarde précédente si elle existe
+            if (saveTimeoutRef.current) {
+              clearTimeout(saveTimeoutRef.current);
+            }
+            
+            // Debounce de 1000ms pour éviter trop de sauvegardes
+            saveTimeoutRef.current = setTimeout(() => {
+              setSyncing(true);
+              const data = {
+                soldeCompte,
+                soldePEA,
+                soldeCrypto,
+                depenses,
+                chargesFixesAuto,
+                chargesPayees,
+                monthlyBudget,
+                lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
+              };
+              
+              db.collection('users')
+                .doc(user.uid)
+                .collection('data')
+                .doc('budget')
+                .set(data, { merge: true })
+                .then(() => {
+                  setSyncing(false);
+                })
+                .catch((error) => {
+                  console.error('Erreur sauvegarde Firestore:', error);
+                  setSyncing(false);
+                });
+            }, 1000);
+            
+            return () => {
+              if (saveTimeoutRef.current) {
+                clearTimeout(saveTimeoutRef.current);
+              }
+            };
+          }, [user, soldeCompte, soldePEA, soldeCrypto, depenses, chargesFixesAuto, chargesPayees, monthlyBudget]);
+
+          // Système de notifications pour charges programmées
+          useEffect(() => {
+            const checkNotifications = () => {
+              const now = new Date();
+              const currentDay = now.getDate();
+              
+              // Construire la liste des charges à payer aujourd'hui
+              const newNotifications = [];
+              
+              chargesFixesAuto.forEach(charge => {
+                const isPaid = chargesPayees[getCurrentMonthKey()]?.[charge.id];
+                
+                if (!isPaid && charge.jourPaiement === currentDay) {
+                  newNotifications.push({
+                    id: charge.id,
+                    chargeId: charge.id,
+                    chargeName: charge.nom,
+                    montant: charge.montant,
+                    date: now.toDateString()
+                  });
+                }
+              });
+              
+              setNotifications(newNotifications);
+            };
+            
+            // Vérifier immédiatement puis toutes les heures
+            checkNotifications();
+            const interval = setInterval(checkNotifications, 3600000); // 1h
+            
+            return () => clearInterval(interval);
+          }, [chargesFixesAuto, chargesPayees]);
+
+          // Réinitialisation mensuelle des charges le 24 à 12h
+          useEffect(() => {
+            const checkMonthlyReset = () => {
+              const now = new Date();
+              const currentDay = now.getDate();
+              const currentHour = now.getHours();
+              
+              // Le 24 du mois à 12h
+              if (currentDay === 24 && currentHour === 12) {
+                const lastReset = localStorage.getItem('lastChargesReset');
+                const currentMonthKey = `${now.getFullYear()}-${now.getMonth()}`;
+                
+                // Si on n'a pas déjà réinitialisé ce mois-ci
+                if (lastReset !== currentMonthKey) {
+                  // Réinitialiser toutes les charges (décocher tout)
+                  setChargesPayees({});
+                  localStorage.setItem('lastChargesReset', currentMonthKey);
+                }
+              }
+            };
+            
+            // Vérifier immédiatement puis toutes les heures
+            checkMonthlyReset();
+            const interval = setInterval(checkMonthlyReset, 3600000); // 1h
+            
+            return () => clearInterval(interval);
+          }, []);
+
+          // Fonction pour parser les montants avec virgule ou point
+          const parseAmount = (value) => {
+            if (!value) return 0;
+            const str = String(value).replace(',', '.');
+            return parseFloat(str) || 0;
+          };
+
+          const calculateMonthlyTotals = () => {
+            const currentMonth = new Date().getMonth();
+            const currentYear = new Date().getFullYear();
+            
+            const totals = {};
+            Object.keys(monthlyBudget.categories).forEach(key => {
+              totals[key] = 0;
+            });
+            totals['exceptionnel'] = 0; // Ajouter les charges exceptionnelles
+            totals['depense'] = 0; // Ajouter les dépenses
+
+            depenses.forEach(dep => {
+              const depDate = new Date(dep.date);
+              if (depDate.getMonth() === currentMonth && depDate.getFullYear() === currentYear) {
+                totals[dep.categorie] = (totals[dep.categorie] || 0) + parseAmount(dep.montant);
+              }
+            });
+
+            return totals;
+          };
+
+          const monthlyTotals = calculateMonthlyTotals();
+          const totalDepense = Object.values(monthlyTotals).reduce((sum, val) => sum + val, 0);
+          
+          const getCurrentMonthKey = () => {
+            const now = new Date();
+            return `${now.getFullYear()}-${now.getMonth()}`;
+          };
+          
+          const chargesFixesPayeesCeMois = chargesFixesAuto
+            .filter(charge => chargesPayees[getCurrentMonthKey()]?.[charge.id])
+            .reduce((sum, charge) => sum + parseAmount(charge.montant), 0);
+          
+          const totalChargesFixes = monthlyBudget.chargesfixes + chargesFixesPayeesCeMois;
+          const resteAVivre = monthlyBudget.revenus - totalChargesFixes;
+          const budgetRestant = resteAVivre - totalDepense;
+
+          const handleAddCharge = (e) => {
+            e.preventDefault();
+            if (newCharge.nom && newCharge.montant) {
+              const charge = {
+                id: Date.now(),
+                nom: newCharge.nom,
+                montant: parseAmount(newCharge.montant),
+                jourPaiement: parseInt(newCharge.jourPaiement)
+              };
+              setChargesFixesAuto([...chargesFixesAuto, charge]);
+              setNewCharge({ nom: '', montant: '', jourPaiement: 1 });
+              setShowChargesForm(false);
+            }
+          };
+
+          const handleAddRevenu = (e) => {
+            e.preventDefault();
+            if (newRevenu.montant) {
+              const montant = parseAmount(newRevenu.montant);
+              setSoldeCompte(prevSolde => prevSolde + montant);
+              setNewRevenu({ type: 'Salaire', montant: '' });
+              setShowRevenuForm(false);
+            }
+          };
+
+          const handleDeleteCharge = (id) => {
+            setChargesFixesAuto(chargesFixesAuto.filter(c => c.id !== id));
+          };
+
+          const toggleChargePaiement = (chargeId) => {
+            const monthKey = getCurrentMonthKey();
+            const newChargesPayees = { ...chargesPayees };
+            
+            if (!newChargesPayees[monthKey]) {
+              newChargesPayees[monthKey] = {};
+            }
+            
+            const wasPaid = newChargesPayees[monthKey][chargeId];
+            newChargesPayees[monthKey][chargeId] = !wasPaid;
+            
+            // Si on coche la charge, déduire du solde
+            if (!wasPaid) {
+              const charge = chargesFixesAuto.find(c => c.id === chargeId);
+              if (charge) {
+                setSoldeCompte(prev => prev - parseAmount(charge.montant));
+              }
+            } else {
+              // Si on décoche, rembourser
+              const charge = chargesFixesAuto.find(c => c.id === chargeId);
+              if (charge) {
+                setSoldeCompte(prev => prev + parseAmount(charge.montant));
+              }
+            }
+            
+            setChargesPayees(newChargesPayees);
+            
+            // Retirer la notification
+            setNotifications(prev => prev.filter(n => n.chargeId !== chargeId));
+          };
+
+          const handleAddDepense = (e) => {
+            e.preventDefault();
+            if (newDepense.montant && newDepense.categorie) {
+              const montant = parseAmount(newDepense.montant);
+              const depense = {
+                id: Date.now(),
+                categorie: newDepense.categorie,
+                montant: montant,
+                description: newDepense.description,
+                date: newDepense.date
+              };
+              setDepenses([depense, ...depenses]);
+              
+              if (newDepense.deduireDuSolde) {
+                setSoldeCompte(prevSolde => prevSolde - montant);
+              }
+              
+              setNewDepense({
+                categorie: 'copine',
+                montant: '',
+                description: '',
+                date: new Date().toISOString().split('T')[0],
+                deduireDuSolde: true
+              });
+              setShowAddForm(false);
+            }
+          };
+
+          const handleDeleteDepense = (id) => {
+            setDepenses(depenses.filter(d => d.id !== id));
+          };
+
+          const formatMoney = (amount) => {
+            return new Intl.NumberFormat('fr-FR', {
+              style: 'currency',
+              currency: 'EUR',
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2
+            }).format(amount);
+          };
+
+          const getCurrentMonth = () => {
+            return new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+          };
+
+          // Calculer le solde prévisionnel jusqu'au 24
+          const calculateSoldePrevisionnelAu24 = () => {
+            const today = new Date();
+            const currentDay = today.getDate();
+            const targetDay = monthlyBudget.jourPaiementSalaire || 24;
+            
+            // Total de toutes les charges fixes
+            const totalChargesFixes = chargesFixesAuto.reduce((sum, charge) => sum + parseAmount(charge.montant), 0);
+            
+            // Charges restantes avant le 24
+            let chargesRestantesAvant24 = 0;
+            
+            chargesFixesAuto.forEach(charge => {
+              const isPaid = chargesPayees[getCurrentMonthKey()]?.[charge.id];
+              
+              if (!isPaid) {
+                // Si on est avant le 24 : prendre les charges qui tombent d'ici le 24
+                if (currentDay < targetDay) {
+                  if (charge.jourPaiement >= currentDay && charge.jourPaiement <= targetDay) {
+                    chargesRestantesAvant24 += parseAmount(charge.montant);
+                  }
+                }
+                // Si on est le 24 ou après : ne prendre que les charges du prochain mois jusqu'au 24
+                // (càd les charges entre 1 et 24 qui ne sont pas encore payées)
+                else {
+                  if (charge.jourPaiement <= targetDay) {
+                    chargesRestantesAvant24 += parseAmount(charge.montant);
+                  }
+                }
+              }
+            });
+            
+            return { 
+              totalChargesFixes,
+              chargesRestantesAvant24, 
+              soldeApresCharges: soldeCompte - chargesRestantesAvant24 
+            };
+          };
+
+          // Fonction de connexion Google
+          const signInWithGoogle = async () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            provider.setCustomParameters({
+              prompt: 'select_account'
+            });
+            try {
+              await auth.signInWithPopup(provider);
+            } catch (error) {
+              console.error('Erreur connexion:', error);
+              alert('Erreur lors de la connexion. Veuillez réessayer.');
+            }
+          };
+
+          // Fonction de déconnexion
+          const signOut = async () => {
+            try {
+              await auth.signOut();
+            } catch (error) {
+              console.error('Erreur déconnexion:', error);
+            }
+          };
+
+          // Écran de chargement
+          if (loading) {
+            return (
+              <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+                <div className="text-center">
+                  <div className="mb-4 text-6xl">💰</div>
+                  <div className="text-xl font-bold text-gray-800">Chargement...</div>
+                </div>
+              </div>
+            );
+          }
+
+          // Écran de connexion
+          if (!user) {
+            return (
+              <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-4">
+                <div className="w-full max-w-md">
+                  <div className="rounded-3xl bg-white p-8 shadow-2xl">
+                    <div className="mb-6 text-center">
+                      <div className="mb-4 text-7xl">💰</div>
+                      <h1 className="mb-2 text-3xl font-bold text-gray-800">Mon Budget</h1>
+                      <p className="text-gray-600">Gérez votre budget en temps réel</p>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <button
+                        onClick={signInWithGoogle}
+                        className="w-full rounded-xl bg-white border-2 border-gray-300 px-6 py-4 font-semibold text-gray-700 shadow-md transition hover:bg-gray-50 hover:shadow-lg flex items-center justify-center gap-3"
+                      >
+                        <svg width="24" height="24" viewBox="0 0 24 24">
+                          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                        </svg>
+                        Se connecter avec Google
+                      </button>
+                    </div>
+                    
+                    <div className="mt-6 text-center text-xs text-gray-500">
+                      <p>Vos données seront synchronisées</p>
+                      <p>entre tous vos appareils</p>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-8 text-center text-sm text-gray-600">
+                    <p>✅ Synchronisation temps réel</p>
+                    <p>🔒 Données sécurisées et privées</p>
+                    <p>📱 Fonctionne sur PC et iPhone</p>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          const DashboardView = () => {
+            const { totalChargesFixes, chargesRestantesAvant24, soldeApresCharges } = calculateSoldePrevisionnelAu24();
+            
+            return (
+              <div className="space-y-6">
+                {/* Notifications */}
+                {notifications.length > 0 && (
+                  <div className={`rounded-2xl border-2 p-4 ${
+                    darkMode 
+                      ? 'bg-red-900/20 border-red-800' 
+                      : 'bg-red-50 border-red-200'
+                  }`}>
+                    <div className={`mb-2 flex items-center gap-2 font-bold ${
+                      darkMode ? 'text-red-400' : 'text-red-900'
+                    }`}>
+                      <Bell size={20} />
+                      <span>Charges à payer aujourd'hui</span>
+                    </div>
+                    {notifications.map(notif => (
+                      <div key={notif.id} className={`mt-2 flex items-center justify-between rounded-lg p-3 ${
+                        darkMode ? 'bg-gray-800' : 'bg-white'
+                      }`}>
+                        <div>
+                          <div className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>{notif.chargeName}</div>
+                          <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{formatMoney(notif.montant)}</div>
+                        </div>
+                        <button
+                          onClick={() => toggleChargePaiement(notif.chargeId)}
+                          className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+                        >
+                          Valider le paiement
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 p-8 text-white shadow-2xl">
+                  <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-3xl"></div>
+                  <div className="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-white/10 blur-3xl"></div>
+                  <div className="relative">
+                    <div className="mb-2 flex items-center gap-2 text-sm font-medium opacity-90">
+                      <Wallet size={18} />
+                      <span>Solde actuel</span>
+                    </div>
+                    <div className="mb-1 text-5xl font-bold">{formatMoney(soldeCompte)}</div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          const newSolde = prompt("Entrez votre nouveau solde (avec centimes, ex: 450.50) :", soldeCompte.toFixed(2));
+                          if (newSolde !== null) {
+                            const parsed = parseFloat(newSolde);
+                            if (!isNaN(parsed)) {
+                              setSoldeCompte(parsed);
+                            }
+                          }
+                        }}
+                        className="mt-3 rounded-full bg-white/20 px-4 py-2 text-sm font-medium backdrop-blur-sm transition hover:bg-white/30"
+                      >
+                        Mettre à jour
+                      </button>
+                      <button
+                        onClick={() => setShowRevenuForm(true)}
+                        className="mt-3 rounded-full bg-white/20 px-4 py-2 text-sm font-medium backdrop-blur-sm transition hover:bg-white/30"
+                      >
+                        + Ajouter revenu
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Solde prévisionnel avant salaire */}
+                {chargesFixesAuto.length > 0 && (
+                  <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-400 via-orange-500 to-amber-500 p-6 text-white shadow-lg">
+                    <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10 blur-2xl"></div>
+                    <div className="absolute -bottom-8 -left-8 h-32 w-32 rounded-full bg-white/10 blur-2xl"></div>
+                    <div className="relative">
+                      <div className="mb-2 flex items-center gap-2 text-sm font-medium opacity-90">
+                        <Calendar size={16} />
+                        <span>Solde prévisionnel avant salaire</span>
+                      </div>
+                      <div className="text-xs opacity-80 mb-2">
+                        Charges restantes avant le 24 : {formatMoney(chargesRestantesAvant24)}
+                      </div>
+                      <div className={`text-4xl font-bold ${soldeApresCharges < 0 ? 'text-red-100' : ''}`}>
+                        {formatMoney(soldeApresCharges)}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+
+                {/* Encadré charges fixes cliquable */}
+                {chargesFixesAuto.length > 0 ? (
+                  <div 
+                    onClick={() => setShowChargesModal(true)}
+                    className={`cursor-pointer rounded-2xl p-6 shadow-lg transition hover:shadow-xl ${darkMode ? "bg-gray-800" : "bg-white"}`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className={`text-lg font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>Charges fixes</h3>
+                        <p className={`text-sm mt-1 ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+                          {chargesFixesAuto.filter(c => chargesPayees[getCurrentMonthKey()]?.[c.id]).length} / {chargesFixesAuto.length} payées
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <div className={`text-3xl font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
+                          {formatMoney(totalChargesFixes)}
+                        </div>
+                        <p className={`text-xs mt-1 ${darkMode ? "text-gray-500" : "text-gray-500"}`}>👆 Cliquez pour gérer</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowChargesForm(true)}
+                    className={`w-full rounded-2xl border-2 border-dashed p-6 text-center transition ${darkMode ? "border-indigo-600 bg-indigo-900/20 hover:border-indigo-500 hover:bg-indigo-900/30" : "border-indigo-300 bg-indigo-50 hover:border-indigo-400 hover:bg-indigo-100"}`}
+                  >
+                    <div className={`font-semibold ${darkMode ? "text-indigo-300" : "text-indigo-900"}`}>Ajouter des charges fixes automatiques</div>
+                    <div className={`text-sm ${darkMode ? "text-indigo-400" : "text-indigo-700"}`}>Ex: Loyer, électricité, abonnements...</div>
+                  </button>
+                )}
+
+                <div className="space-y-3">
+                  <h3 className={`text-xl font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>Vos catégories</h3>
+                  {Object.entries(monthlyBudget.categories)
+                    .filter(([key, cat]) => cat.showInDashboard !== false)
+                    .sort(([keyA], [keyB]) => {
+                      const depenseA = monthlyTotals[keyA] || 0;
+                      const depenseB = monthlyTotals[keyB] || 0;
+                      
+                      // Si les deux sont à 0, garder l'ordre par défaut
+                      if (depenseA === 0 && depenseB === 0) {
+                        const defaultOrder = ['copine', 'perso', 'pea', 'crypto'];
+                        const indexA = defaultOrder.indexOf(keyA);
+                        const indexB = defaultOrder.indexOf(keyB);
+                        if (indexA !== -1 && indexB !== -1) {
+                          return indexA - indexB;
+                        }
+                        return 0;
+                      }
+                      
+                      return depenseB - depenseA; // Tri décroissant (plus grand d'abord)
+                    })
+                    .map(([key, cat]) => {
+                    const depense = monthlyTotals[key] || 0;
+                    const restant = cat.budget - depense;
+                    const pourcentage = (depense / cat.budget) * 100;
+                    
+                    return (
+                      <div 
+                        key={`category-${key}`}
+                        className={`rounded-2xl p-5 shadow-lg transition-shadow hover:shadow-xl cursor-pointer ${darkMode ? "bg-gray-800" : "bg-white"}`}
+                        onClick={() => setShowCategoryDetail(key)}
+                      >
+                        <div className="mb-3 flex items-center justify-between">
+                          <div>
+                            <h4 className={`font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>{cat.nom}</h4>
+                            <div className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+                              {formatMoney(depense)} / {formatMoney(cat.budget)}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            {restant < 0 ? (
+                              <>
+                                <div className="text-xs text-red-600">dépassé de</div>
+                                <div className="text-xl font-bold text-red-600">
+                                  {formatMoney(Math.abs(restant))}
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <div className={`text-xl font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>
+                                  {formatMoney(restant)}
+                                </div>
+                                <div className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>restant</div>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className={`relative h-3 overflow-hidden rounded-full ${darkMode ? "bg-gray-700" : "bg-gray-100"}`}>
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{
+                              width: `${Math.min(pourcentage, 100)}%`,
+                              backgroundColor: cat.color
+                            }}
+                          ></div>
+                        </div>
+                        
+                        {restant > 0 && restant <= 10 && (
+                          <div className={`mt-2 flex items-center gap-1 text-xs ${darkMode ? "text-orange-400" : "text-orange-600"}`}>
+                            <AlertCircle size={14} />
+                            <span>Attention, budget presque atteint !</span>
+                          </div>
+                        )}
+                        
+                        <div className={`mt-2 text-xs text-center ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                          👆 Cliquez pour voir le détail
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <button
+                  onClick={() => setShowAddForm(true)}
+                  className="fixed bottom-20 right-6 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-2xl transition hover:scale-110 active:scale-95"
+                >
+                  <PlusCircle size={28} />
+                </button>
+              </div>
+            );
+          };
+
+          const HistoriqueView = () => {
+            const depensesMoisActuel = depenses.filter(dep => {
+              const depDate = new Date(dep.date);
+              const now = new Date();
+              return depDate.getMonth() === now.getMonth() && depDate.getFullYear() === now.getFullYear();
+            });
+
+            return (
+              <div className="space-y-4">
+                <h3 className={`text-2xl font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>Historique des dépenses</h3>
+                
+                {depensesMoisActuel.length === 0 ? (
+                  <div className={`rounded-2xl p-12 text-center shadow-lg ${darkMode ? "bg-gray-800" : "bg-white"}`}>
+                    <TrendingDown className="mx-auto mb-4 text-gray-400" size={48} />
+                    <p className={darkMode ? "text-gray-400" : "text-gray-600"}>Aucune dépense ce mois-ci</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {depensesMoisActuel.map(dep => (
+                      <div key={dep.id} className={`rounded-xl p-4 shadow-md transition hover:shadow-lg ${darkMode ? "bg-gray-800" : "bg-white"}`}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="h-3 w-3 rounded-full"
+                                style={{ 
+                                  backgroundColor: dep.categorie === 'exceptionnel' ? '#EF4444' : 
+                                                  dep.categorie === 'depense' ? '#6B7280' :
+                                                  monthlyBudget.categories[dep.categorie]?.color || '#6B7280'
+                                }}
+                              ></div>
+                              <span className={`font-semibold ${darkMode ? "text-white" : "text-gray-800"}`}>
+                                {dep.categorie === 'exceptionnel' ? 'Charge exceptionnelle' : 
+                                 dep.categorie === 'depense' ? 'Dépense' :
+                                 monthlyBudget.categories[dep.categorie]?.nom || 'Dépense'}
+                              </span>
+                            </div>
+                            {dep.description && (
+                              <p className={`mt-1 text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}>{dep.description}</p>
+                            )}
+                            <p className={`mt-1 text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
+                              {new Date(dep.date).toLocaleDateString('fr-FR')}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <div className={`text-xl font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>
+                              -{formatMoney(dep.montant)}
+                            </div>
+                            <button
+                              onClick={() => handleDeleteDepense(dep.id)}
+                              className={`mt-1 text-xs hover:text-red-700 ${darkMode ? "text-red-400 hover:text-red-300" : "text-red-500"}`}
+                            >
+                              Supprimer
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          };
+
+          const StatsView = () => {
+            const total = Object.values(monthlyTotals).reduce((sum, val) => sum + val, 0);
+            
+            return (
+              <div className="space-y-6">
+                <h3 className={`text-2xl font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>Statistiques {getCurrentMonth()}</h3>
+                
+                <div className={`rounded-2xl p-6 shadow-lg ${darkMode ? "bg-gray-800" : "bg-white"}`}>
+                  <h4 className={`mb-4 font-bold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>Répartition des dépenses</h4>
+                  <div className="space-y-3">
+                    {Object.entries(monthlyBudget.categories).map(([key, cat]) => {
+                      const depense = monthlyTotals[key] || 0;
+                      const pourcentage = total > 0 ? (depense / total) * 100 : 0;
+                      
+                      return (
+                        <div key={key}>
+                          <div className="mb-1 flex items-center justify-between text-sm">
+                            <span className={`font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>{cat.nom}</span>
+                            <span className={`font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>{formatMoney(depense)}</span>
+                          </div>
+                          <div className={`relative h-8 overflow-hidden rounded-lg ${darkMode ? "bg-gray-700" : "bg-gray-100"}`}>
+                            <div
+                              className="flex h-full items-center justify-end px-3 text-xs font-bold text-white transition-all duration-500"
+                              style={{
+                                width: `${pourcentage}%`,
+                                backgroundColor: cat.color
+                              }}
+                            >
+                              {pourcentage > 15 && `${pourcentage.toFixed(0)}%`}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    
+                    {/* Autre (Dépenses + Charges exceptionnelles) */}
+                    {(monthlyTotals['exceptionnel'] > 0 || monthlyTotals['depense'] > 0) && (
+                      <div>
+                        <div className="mb-1 flex items-center justify-between text-sm">
+                          <span className={`font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>Autre</span>
+                          <span className={`font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>{formatMoney((monthlyTotals['exceptionnel'] || 0) + (monthlyTotals['depense'] || 0))}</span>
+                        </div>
+                        <div className={`relative h-8 overflow-hidden rounded-lg ${darkMode ? "bg-gray-700" : "bg-gray-100"}`}>
+                          <div
+                            className="flex h-full items-center justify-end px-3 text-xs font-bold text-white transition-all duration-500"
+                            style={{
+                              width: `${total > 0 ? (((monthlyTotals['exceptionnel'] || 0) + (monthlyTotals['depense'] || 0)) / total) * 100 : 0}%`,
+                              backgroundColor: '#6B7280'
+                            }}
+                          >
+                            {total > 0 && (((monthlyTotals['exceptionnel'] || 0) + (monthlyTotals['depense'] || 0)) / total) * 100 > 15 && `${((((monthlyTotals['exceptionnel'] || 0) + (monthlyTotals['depense'] || 0)) / total) * 100).toFixed(0)}%`}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className={`mt-6 rounded-xl p-4 ${darkMode ? "bg-indigo-900/30" : "bg-indigo-50"}`}>
+                    <div className={`text-sm ${darkMode ? "text-indigo-400" : "text-indigo-700"}`}>Total dépensé ce mois</div>
+                    <div className={`text-3xl font-bold ${darkMode ? "text-indigo-200" : "text-indigo-900"}`}>{formatMoney(total)}</div>
+                  </div>
+                </div>
+              </div>
+            );
+          };
+
+          const PEAView = () => {
+            const currentMonth = new Date().getMonth();
+            const currentYear = new Date().getFullYear();
+            
+            const versementsMois = depenses.filter(dep => {
+              const depDate = new Date(dep.date);
+              return dep.categorie === 'pea' && 
+                     depDate.getMonth() === currentMonth && 
+                     depDate.getFullYear() === currentYear;
+            });
+            
+            const totalVersementsMois = versementsMois.reduce((sum, dep) => sum + dep.montant, 0);
+
+            // Créer graphique de projection avec intérêts composés
+            useEffect(() => {
+              if (chartRef.current && view === 'pea') {
+                const ctx = chartRef.current.getContext('2d');
+                
+                if (chartInstance.current) {
+                  chartInstance.current.destroy();
+                }
+
+                // Calcul avec intérêts composés à 7% annuel
+                const tauxAnnuel = 0.07;
+                const versementMensuel = 100; // Budget PEA mensuel
+                
+                const calculerValeurFuture = (annees) => {
+                  const mois = annees * 12;
+                  const tauxMensuel = tauxAnnuel / 12;
+                  // Formule de la valeur future d'une annuité
+                  return versementMensuel * (((1 + tauxMensuel) ** mois - 1) / tauxMensuel) * (1 + tauxMensuel);
+                };
+
+                const valeur10ans = calculerValeurFuture(10);
+                const valeur20ans = calculerValeurFuture(20);
+                const valeur30ans = calculerValeurFuture(30);
+                const valeur50ans = calculerValeurFuture(50);
+
+                chartInstance.current = new Chart(ctx, {
+                  type: 'bar',
+                  data: {
+                    labels: ['10 ans', '20 ans', '30 ans', '50 ans'],
+                    datasets: [{
+                      label: 'Valeur du PEA (€)',
+                      data: [valeur10ans, valeur20ans, valeur30ans, valeur50ans],
+                      backgroundColor: [
+                        'rgba(20, 184, 166, 0.8)',
+                        'rgba(6, 182, 212, 0.8)',
+                        'rgba(59, 130, 246, 0.8)',
+                        'rgba(99, 102, 241, 0.8)'
+                      ],
+                      borderRadius: 8
+                    }]
+                  },
+                  options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: { display: false },
+                      tooltip: {
+                        callbacks: {
+                          label: (context) => {
+                            return new Intl.NumberFormat('fr-FR', {
+                              style: 'currency',
+                              currency: 'EUR',
+                              maximumFractionDigits: 0
+                            }).format(context.parsed.y);
+                          }
+                        }
+                      }
+                    },
+                    scales: {
+                      y: {
+                        beginAtZero: true,
+                        ticks: {
+                          callback: (value) => {
+                            return new Intl.NumberFormat('fr-FR', {
+                              style: 'currency',
+                              currency: 'EUR',
+                              maximumFractionDigits: 0
+                            }).format(value);
+                          }
+                        }
+                      }
+                    }
+                  }
+                });
+              }
+
+              return () => {
+                if (chartInstance.current) {
+                  chartInstance.current.destroy();
+                }
+              };
+            }, [view]);
+            
+            return (
+              <div className="space-y-6">
+                <h3 className={`text-2xl font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>Plan d'Épargne en Actions</h3>
+                
+                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-teal-500 via-cyan-500 to-blue-500 p-8 text-white shadow-2xl">
+                  <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-3xl"></div>
+                  <div className="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-white/10 blur-3xl"></div>
+                  <div className="relative">
+                    <div className="mb-2 text-sm font-medium opacity-90">Valeur totale du PEA</div>
+                    <div className="mb-1 text-5xl font-bold">{formatMoney(soldePEA)}</div>
+                    <button
+                      onClick={() => {
+                        const newSolde = prompt("Entrez la valeur actuelle de votre PEA (avec centimes) :", soldePEA.toFixed(2));
+                        if (newSolde !== null) {
+                          const parsed = parseFloat(newSolde);
+                          if (!isNaN(parsed)) {
+                            setSoldePEA(parsed);
+                          }
+                        }
+                      }}
+                      className="mt-3 rounded-full bg-white/20 px-4 py-2 text-sm font-medium backdrop-blur-sm transition hover:bg-white/30"
+                    >
+                      Mettre à jour
+                    </button>
+                  </div>
+                </div>
+
+                <div className={`rounded-2xl p-6 shadow-lg ${darkMode ? "bg-gray-800" : "bg-white"}`}>
+                  <div className="mb-4 flex items-center justify-between">
+                    <h4 className={`text-xl font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>Versements {getCurrentMonth()}</h4>
+                    <div className="rounded-full bg-teal-100 px-3 py-1 text-sm font-bold text-teal-800">
+                      {formatMoney(totalVersementsMois)}
+                    </div>
+                  </div>
+                  
+                  {versementsMois.length === 0 ? (
+                    <div className={`rounded-xl p-8 text-center ${darkMode ? "bg-gray-700" : "bg-gray-50"}`}>
+                      <p className={`${darkMode ? "text-gray-400" : "text-gray-600"}`}>Aucun versement ce mois-ci</p>
+                      <p className={`mt-2 text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                        Les versements PEA ajoutés dans l'onglet Budget apparaîtront ici
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {versementsMois.map(dep => (
+                        <div key={dep.id} className={`flex items-center justify-between rounded-xl p-4 ${darkMode ? "bg-teal-900/30" : "bg-teal-50"}`}>
+                          <div>
+                            <div className={`font-semibold ${darkMode ? "text-white" : "text-gray-800"}`}>Versement PEA</div>
+                            {dep.description && <p className={`mt-1 text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}>{dep.description}</p>}
+                            <p className="mt-1 text-xs text-gray-500">{new Date(dep.date).toLocaleDateString('fr-FR')}</p>
+                          </div>
+                          <div className="text-xl font-bold text-teal-700">+{formatMoney(dep.montant)}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className={`rounded-2xl p-6 shadow-lg ${darkMode ? "bg-gray-800" : "bg-white"}`}>
+                  <div className="mb-4 flex items-center justify-between">
+                    <h4 className={`text-lg font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>Objectif mensuel</h4>
+                    <button
+                      onClick={() => {
+                        const newObjectif = prompt("Entrez votre nouvel objectif mensuel PEA (€) :", monthlyBudget.categories.pea.budget);
+                        if (newObjectif !== null) {
+                          const parsed = parseFloat(newObjectif);
+                          if (!isNaN(parsed) && parsed >= 0) {
+                            setMonthlyBudget({
+                              ...monthlyBudget,
+                              categories: {
+                                ...monthlyBudget.categories,
+                                pea: { ...monthlyBudget.categories.pea, budget: parsed }
+                              }
+                            });
+                          }
+                        }
+                      }}
+                      className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${darkMode ? "bg-teal-900/30 text-teal-300 hover:bg-teal-900/50" : "bg-teal-50 text-teal-700 hover:bg-teal-100"}`}
+                    >
+                      ✏️ Modifier
+                    </button>
+                  </div>
+                  <div className="mb-3 flex items-center justify-between">
+                    <span className={`${darkMode ? "text-gray-300" : "text-gray-700"}`}>Budget prévu</span>
+                    <span className={`font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>{formatMoney(monthlyBudget.categories.pea.budget)}</span>
+                  </div>
+                  <div className="mb-3 flex items-center justify-between">
+                    <span className={`${darkMode ? "text-gray-300" : "text-gray-700"}`}>Versé ce mois</span>
+                    <span className="font-bold text-teal-700">{formatMoney(totalVersementsMois)}</span>
+                  </div>
+                  <div className={`relative h-4 overflow-hidden rounded-full ${darkMode ? "bg-gray-700" : "bg-gray-100"}`}>
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 transition-all duration-500"
+                      style={{ width: `${Math.min((totalVersementsMois / monthlyBudget.categories.pea.budget) * 100, 100)}%` }}
+                    ></div>
+                  </div>
+                  {totalVersementsMois >= monthlyBudget.categories.pea.budget && (
+                    <div className={`mt-3 rounded-lg p-3 text-center text-sm font-semibold ${darkMode ? "bg-green-900/30 text-green-300" : "bg-green-50 text-green-800"}`}>
+                      🎉 Objectif atteint ce mois !
+                    </div>
+                  )}
+                </div>
+
+                {/* Projection long terme en bas */}
+                <div className={`rounded-2xl p-6 shadow-lg ${darkMode ? "bg-gray-800" : "bg-white"}`}>
+                  <h4 className={`mb-2 text-xl font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>🚀 Projection sur le long terme</h4>
+                  <p className={`mb-4 text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+                    Avec {formatMoney(100)} / mois et un rendement annuel de 7% (moyenne historique des marchés)
+                  </p>
+                  
+                  <div style={{ height: '300px' }}>
+                    <canvas ref={chartRef}></canvas>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-2 gap-3">
+                    <div className={`rounded-lg p-3 ${darkMode ? "bg-teal-900/30" : "bg-teal-50"}`}>
+                      <div className={`text-xs ${darkMode ? "text-teal-300" : "text-teal-700"}`}>Dans 10 ans</div>
+                      <div className={`text-lg font-bold ${darkMode ? "text-teal-200" : "text-teal-900"}`}>≈ 17 409 €</div>
+                    </div>
+                    <div className={`rounded-lg p-3 ${darkMode ? "bg-cyan-900/30" : "bg-cyan-50"}`}>
+                      <div className={`text-xs ${darkMode ? "text-cyan-300" : "text-cyan-700"}`}>Dans 20 ans</div>
+                      <div className={`text-lg font-bold ${darkMode ? "text-cyan-200" : "text-cyan-900"}`}>≈ 52 397 €</div>
+                    </div>
+                    <div className={`rounded-lg p-3 ${darkMode ? "bg-blue-900/30" : "bg-blue-50"}`}>
+                      <div className={`text-xs ${darkMode ? "text-blue-300" : "text-blue-700"}`}>Dans 30 ans</div>
+                      <div className={`text-lg font-bold ${darkMode ? "text-blue-200" : "text-blue-900"}`}>≈ 122 709 €</div>
+                    </div>
+                    <div className={`rounded-lg p-3 ${darkMode ? "bg-indigo-900/30" : "bg-indigo-50"}`}>
+                      <div className={`text-xs ${darkMode ? "text-indigo-300" : "text-indigo-700"}`}>Dans 50 ans</div>
+                      <div className={`text-lg font-bold ${darkMode ? "text-indigo-200" : "text-indigo-900"}`}>≈ 528 936 €</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          };
+
+          const CryptoView = () => {
+            const currentMonth = new Date().getMonth();
+            const currentYear = new Date().getFullYear();
+            
+            const versementsMois = depenses.filter(dep => {
+              const depDate = new Date(dep.date);
+              return dep.categorie === 'crypto' && 
+                     depDate.getMonth() === currentMonth && 
+                     depDate.getFullYear() === currentYear;
+            });
+            
+            const totalVersementsMois = versementsMois.reduce((sum, dep) => sum + dep.montant, 0);
+            
+            return (
+              <div className="space-y-6">
+                <h3 className={`text-2xl font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>Cryptomonnaies</h3>
+                
+                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-green-400 via-emerald-500 to-teal-500 p-8 text-white shadow-2xl">
+                  <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-3xl"></div>
+                  <div className="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-white/10 blur-3xl"></div>
+                  <div className="relative">
+                    <div className="mb-2 text-sm font-medium opacity-90">Valeur totale Crypto</div>
+                    <div className="mb-1 text-5xl font-bold">{formatMoney(soldeCrypto)}</div>
+                    <button
+                      onClick={() => {
+                        const newSolde = prompt("Entrez la valeur actuelle de votre portefeuille crypto (avec centimes) :", soldeCrypto.toFixed(2));
+                        if (newSolde !== null) {
+                          const parsed = parseFloat(newSolde);
+                          if (!isNaN(parsed)) {
+                            setSoldeCrypto(parsed);
+                          }
+                        }
+                      }}
+                      className="mt-3 rounded-full bg-white/20 px-4 py-2 text-sm font-medium backdrop-blur-sm transition hover:bg-white/30"
+                    >
+                      Mettre à jour
+                    </button>
+                  </div>
+                </div>
+
+                <div className={`rounded-2xl p-6 shadow-lg ${darkMode ? "bg-gray-800" : "bg-white"}`}>
+                  <div className="mb-4 flex items-center justify-between">
+                    <h4 className={`text-xl font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>DCA {getCurrentMonth()}</h4>
+                    <div className="rounded-full bg-emerald-100 px-3 py-1 text-sm font-bold text-emerald-800">
+                      {formatMoney(totalVersementsMois)}
+                    </div>
+                  </div>
+                  
+                  {versementsMois.length === 0 ? (
+                    <div className={`rounded-xl p-8 text-center ${darkMode ? "bg-gray-700" : "bg-gray-50"}`}>
+                      <p className={`${darkMode ? "text-gray-400" : "text-gray-600"}`}>Aucun versement ce mois-ci</p>
+                      <p className={`mt-2 text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                        Les achats crypto ajoutés dans l'onglet Budget apparaîtront ici
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {versementsMois.map(dep => (
+                        <div key={dep.id} className={`flex items-center justify-between rounded-xl p-4 ${darkMode ? "bg-emerald-900/30" : "bg-emerald-50"}`}>
+                          <div>
+                            <div className={`font-semibold ${darkMode ? "text-white" : "text-gray-800"}`}>Achat Crypto</div>
+                            {dep.description && <p className={`mt-1 text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}>{dep.description}</p>}
+                            <p className="mt-1 text-xs text-gray-500">{new Date(dep.date).toLocaleDateString('fr-FR')}</p>
+                          </div>
+                          <div className="text-xl font-bold text-emerald-700">+{formatMoney(dep.montant)}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className={`rounded-2xl p-6 shadow-lg ${darkMode ? "bg-gray-800" : "bg-white"}`}>
+                  <div className="mb-4 flex items-center justify-between">
+                    <h4 className={`text-lg font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>Objectif mensuel (DCA)</h4>
+                    <button
+                      onClick={() => {
+                        const newObjectif = prompt("Entrez votre nouvel objectif mensuel Crypto (€) :", monthlyBudget.categories.crypto.budget);
+                        if (newObjectif !== null) {
+                          const parsed = parseFloat(newObjectif);
+                          if (!isNaN(parsed) && parsed >= 0) {
+                            setMonthlyBudget({
+                              ...monthlyBudget,
+                              categories: {
+                                ...monthlyBudget.categories,
+                                crypto: { ...monthlyBudget.categories.crypto, budget: parsed }
+                              }
+                            });
+                          }
+                        }
+                      }}
+                      className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${darkMode ? "bg-emerald-900/30 text-emerald-300 hover:bg-emerald-900/50" : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"}`}
+                    >
+                      ✏️ Modifier
+                    </button>
+                  </div>
+                  <div className="mb-3 flex items-center justify-between">
+                    <span className={`${darkMode ? "text-gray-300" : "text-gray-700"}`}>Budget prévu</span>
+                    <span className={`font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>{formatMoney(monthlyBudget.categories.crypto.budget)}</span>
+                  </div>
+                  <div className="mb-3 flex items-center justify-between">
+                    <span className={`${darkMode ? "text-gray-300" : "text-gray-700"}`}>Investi ce mois</span>
+                    <span className="font-bold text-emerald-700">{formatMoney(totalVersementsMois)}</span>
+                  </div>
+                  <div className={`relative h-4 overflow-hidden rounded-full ${darkMode ? "bg-gray-700" : "bg-gray-100"}`}>
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-green-400 to-emerald-500 transition-all duration-500"
+                      style={{ width: `${Math.min((totalVersementsMois / monthlyBudget.categories.crypto.budget) * 100, 100)}%` }}
+                    ></div>
+                  </div>
+                  {totalVersementsMois >= monthlyBudget.categories.crypto.budget && (
+                    <div className={`mt-3 rounded-lg p-3 text-center text-sm font-semibold ${darkMode ? "bg-green-900/30 text-green-300" : "bg-green-50 text-green-800"}`}>
+                      🎉 Objectif atteint ce mois !
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          };
+
+          const SettingsView = () => {
+            const [editingCategory, setEditingCategory] = useState(null);
+            const [newCategoryName, setNewCategoryName] = useState('');
+            const [newCategoryBudget, setNewCategoryBudget] = useState('');
+            const [newCategoryColor, setNewCategoryColor] = useState('#6366F1');
+            const [newCategoryShowInDashboard, setNewCategoryShowInDashboard] = useState(true);
+            const [isCreatingNew, setIsCreatingNew] = useState(false);
+            
+            const addNewCategory = () => {
+              if (newCategoryName && newCategoryBudget) {
+                const newKey = newCategoryName.toLowerCase().replace(/\s+/g, '_');
+                if (monthlyBudget.categories[newKey]) {
+                  alert('Une catégorie avec ce nom existe déjà');
+                  return;
+                }
+                
+                setMonthlyBudget({
+                  ...monthlyBudget,
+                  categories: {
+                    ...monthlyBudget.categories,
+                    [newKey]: {
+                      nom: newCategoryName,
+                      budget: parseAmount(newCategoryBudget),
+                      color: newCategoryColor,
+                      showInDashboard: newCategoryShowInDashboard
+                    }
+                  }
+                });
+                setIsCreatingNew(false);
+                setNewCategoryName('');
+                setNewCategoryBudget('');
+                setNewCategoryColor('#6366F1');
+                setNewCategoryShowInDashboard(true);
+              }
+            };
+            
+            const deleteCategory = (key) => {
+              if (confirm(`Supprimer la catégorie "${monthlyBudget.categories[key].nom}" ?\n\nAttention : Les dépenses de cette catégorie resteront dans l'historique.`)) {
+                const newCategories = { ...monthlyBudget.categories };
+                delete newCategories[key];
+                setMonthlyBudget({
+                  ...monthlyBudget,
+                  categories: newCategories
+                });
+              }
+            };
+            
+            return (
+              <div className="space-y-6">
+                <h3 className={`text-2xl font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>⚙️ Paramètres</h3>
+                
+                {/* Jour de paiement du salaire */}
+                <div className={`rounded-2xl p-6 shadow-lg ${darkMode ? "bg-gray-800" : "bg-white"}`}>
+                  <h4 className={`mb-4 text-lg font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>
+                    💰 Date d'arrivée du salaire
+                  </h4>
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1">
+                      <label className={`block text-sm ${darkMode ? "text-gray-400" : "text-gray-600"} mb-2`}>
+                        Jour du mois (1-31)
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="31"
+                        value={monthlyBudget.jourPaiementSalaire || 24}
+                        onChange={(e) => {
+                          const jour = parseInt(e.target.value);
+                          if (jour >= 1 && jour <= 31) {
+                            setMonthlyBudget({
+                              ...monthlyBudget,
+                              jourPaiementSalaire: jour
+                            });
+                          }
+                        }}
+                        className={`w-full rounded-lg border-2 px-4 py-2 ${
+                          darkMode 
+                            ? "bg-gray-700 border-gray-600 text-white" 
+                            : "bg-white border-gray-300"
+                        }`}
+                      />
+                    </div>
+                    <div className={`flex-1 rounded-lg p-4 ${darkMode ? "bg-gray-700" : "bg-gray-50"}`}>
+                      <div className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+                        Actuellement le
+                      </div>
+                      <div className={`text-2xl font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>
+                        {monthlyBudget.jourPaiementSalaire || 24}
+                      </div>
+                      <div className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                        de chaque mois
+                      </div>
+                    </div>
+                  </div>
+                  <div className={`mt-4 text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+                    💡 Cette date est utilisée pour calculer votre solde prévisionnel avant salaire
+                  </div>
+                </div>
+
+                {/* Gestion des catégories */}
+                <div className={`rounded-2xl p-6 shadow-lg ${darkMode ? "bg-gray-800" : "bg-white"}`}>
+                  <div className="mb-4 flex items-center justify-between">
+                    <h4 className={`text-lg font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>
+                      📊 Catégories de dépenses
+                    </h4>
+                    <button
+                      onClick={() => {
+                        setIsCreatingNew(true);
+                        setNewCategoryName('');
+                        setNewCategoryBudget('');
+                        setNewCategoryColor('#6366F1');
+                        setNewCategoryShowInDashboard(true);
+                      }}
+                      className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                        darkMode 
+                          ? "bg-green-900/30 text-green-300 hover:bg-green-900/50" 
+                          : "bg-green-50 text-green-700 hover:bg-green-100"
+                      }`}
+                    >
+                      ➕ Nouvelle catégorie
+                    </button>
+                  </div>
+                  
+                  {/* Formulaire création nouvelle catégorie */}
+                  {isCreatingNew && (
+                    <div className={`mb-4 rounded-lg p-4 ${darkMode ? "bg-gray-700 border-2 border-green-600" : "bg-green-50 border-2 border-green-300"}`}>
+                      <div className="space-y-3">
+                        <input
+                          type="text"
+                          value={newCategoryName}
+                          onChange={(e) => setNewCategoryName(e.target.value)}
+                          placeholder="Nom de la catégorie"
+                          className={`w-full rounded-lg border-2 px-4 py-2 ${
+                            darkMode 
+                              ? "bg-gray-600 border-gray-500 text-white" 
+                              : "bg-white border-gray-300"
+                          }`}
+                        />
+                        <div className="flex gap-3">
+                          <div className="flex-1">
+                            <input
+                              type="number"
+                              value={newCategoryBudget}
+                              onChange={(e) => setNewCategoryBudget(e.target.value)}
+                              placeholder="Budget (€)"
+                              className={`w-full rounded-lg border-2 px-4 py-2 ${
+                                darkMode 
+                                  ? "bg-gray-600 border-gray-500 text-white" 
+                                  : "bg-white border-gray-300"
+                              }`}
+                            />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="color"
+                              value={newCategoryColor}
+                              onChange={(e) => setNewCategoryColor(e.target.value)}
+                              className="h-10 w-16 cursor-pointer rounded-lg border-2"
+                            />
+                          </div>
+                        </div>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={newCategoryShowInDashboard}
+                            onChange={(e) => setNewCategoryShowInDashboard(e.target.checked)}
+                            className="h-5 w-5 cursor-pointer rounded"
+                          />
+                          <span className={`text-sm ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+                            Afficher un encadré sur la page d'accueil
+                          </span>
+                        </label>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={addNewCategory}
+                            className="flex-1 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
+                          >
+                            ✅ Créer
+                          </button>
+                          <button
+                            onClick={() => setIsCreatingNew(false)}
+                            className={`flex-1 rounded-lg px-4 py-2 text-sm font-semibold ${
+                              darkMode 
+                                ? "bg-gray-600 text-white hover:bg-gray-500" 
+                                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                            }`}
+                          >
+                            ❌ Annuler
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="space-y-3">
+                    {Object.entries(monthlyBudget.categories).map(([key, cat]) => (
+                      <div 
+                        key={key}
+                        className={`rounded-lg p-4 ${darkMode ? "bg-gray-700" : "bg-gray-50"}`}
+                      >
+                        {editingCategory === key ? (
+                          <div className="space-y-3">
+                            <input
+                              type="text"
+                              value={newCategoryName}
+                              onChange={(e) => setNewCategoryName(e.target.value)}
+                              placeholder="Nom de la catégorie"
+                              className={`w-full rounded-lg border-2 px-4 py-2 ${
+                                darkMode 
+                                  ? "bg-gray-600 border-gray-500 text-white" 
+                                  : "bg-white border-gray-300"
+                              }`}
+                            />
+                            <div className="flex gap-3">
+                              <div className="flex-1">
+                                <input
+                                  type="number"
+                                  value={newCategoryBudget}
+                                  onChange={(e) => setNewCategoryBudget(e.target.value)}
+                                  placeholder="Budget (€)"
+                                  className={`w-full rounded-lg border-2 px-4 py-2 ${
+                                    darkMode 
+                                      ? "bg-gray-600 border-gray-500 text-white" 
+                                      : "bg-white border-gray-300"
+                                  }`}
+                                />
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="color"
+                                  value={newCategoryColor}
+                                  onChange={(e) => setNewCategoryColor(e.target.value)}
+                                  className="h-10 w-16 cursor-pointer rounded-lg border-2"
+                                />
+                              </div>
+                            </div>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={newCategoryShowInDashboard}
+                                onChange={(e) => setNewCategoryShowInDashboard(e.target.checked)}
+                                className="h-5 w-5 cursor-pointer rounded"
+                              />
+                              <span className={`text-sm ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+                                Afficher un encadré sur la page d'accueil
+                              </span>
+                            </label>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => {
+                                  if (newCategoryName && newCategoryBudget) {
+                                    setMonthlyBudget({
+                                      ...monthlyBudget,
+                                      categories: {
+                                        ...monthlyBudget.categories,
+                                        [key]: {
+                                          nom: newCategoryName,
+                                          budget: parseAmount(newCategoryBudget),
+                                          color: newCategoryColor,
+                                          showInDashboard: newCategoryShowInDashboard
+                                        }
+                                      }
+                                    });
+                                    setEditingCategory(null);
+                                  }
+                                }}
+                                className="flex-1 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
+                              >
+                                ✅ Enregistrer
+                              </button>
+                              <button
+                                onClick={() => setEditingCategory(null)}
+                                className={`flex-1 rounded-lg px-4 py-2 text-sm font-semibold ${
+                                  darkMode 
+                                    ? "bg-gray-600 text-white hover:bg-gray-500" 
+                                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                                }`}
+                              >
+                                ❌ Annuler
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div
+                                className="h-6 w-6 rounded-full"
+                                style={{ backgroundColor: cat.color }}
+                              ></div>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <div className={`font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>
+                                    {cat.nom}
+                                  </div>
+                                  {cat.showInDashboard && (
+                                    <span className={`text-xs px-2 py-0.5 rounded ${darkMode ? "bg-indigo-900/30 text-indigo-300" : "bg-indigo-100 text-indigo-700"}`}>
+                                      Principale
+                                    </span>
+                                  )}
+                                </div>
+                                <div className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+                                  Budget : {formatMoney(cat.budget)}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => {
+                                  setEditingCategory(key);
+                                  setNewCategoryName(cat.nom);
+                                  setNewCategoryBudget(cat.budget.toString());
+                                  setNewCategoryColor(cat.color);
+                                  setNewCategoryShowInDashboard(cat.showInDashboard !== false);
+                                }}
+                                className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+                                  darkMode 
+                                    ? "bg-indigo-900/30 text-indigo-300 hover:bg-indigo-900/50" 
+                                    : "bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
+                                }`}
+                              >
+                                ✏️
+                              </button>
+                              <button
+                                onClick={() => deleteCategory(key)}
+                                className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+                                  darkMode 
+                                    ? "bg-red-900/30 text-red-300 hover:bg-red-900/50" 
+                                    : "bg-red-50 text-red-700 hover:bg-red-100"
+                                }`}
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            );
+          };
+
+          return (
+            <div className={`min-h-screen ${darkMode ? 'dark bg-gray-900' : 'bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50'}`}>
+              {/* Indicateur de synchronisation */}
+              {syncing && (
+                <div className="fixed top-4 right-4 z-50 rounded-full bg-blue-500 px-4 py-2 text-sm font-medium text-white shadow-lg">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 animate-pulse rounded-full bg-white"></div>
+                    Synchronisation...
+                  </div>
+                </div>
+              )}
+              
+              <div className={darkMode ? 'bg-gray-800 shadow-sm' : 'bg-white shadow-sm'}>
+                <div className="mx-auto max-w-2xl px-4 py-4 flex items-center justify-between">
+                  <div>
+                    <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>💰 Mon Budget</h1>
+                    <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {user?.displayName || user?.email || 'Gérez vos finances'}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setDarkMode(!darkMode)}
+                      className={`rounded-full p-2 transition ${
+                        darkMode 
+                          ? 'bg-gray-700 text-yellow-400 hover:bg-gray-600' 
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+                    </button>
+                    <button
+                      onClick={signOut}
+                      className={`rounded-lg px-3 py-2 text-xs font-medium transition ${
+                        darkMode 
+                          ? 'bg-red-900/30 text-red-400 hover:bg-red-900/50' 
+                          : 'bg-red-50 text-red-600 hover:bg-red-100'
+                      }`}
+                      title="Déconnexion"
+                    >
+                      Déconnexion
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mx-auto max-w-2xl px-4 py-6 pb-24">
+                {view === 'dashboard' && <DashboardView />}
+                {view === 'historique' && <HistoriqueView />}
+                {view === 'stats' && <StatsView />}
+                {view === 'pea' && <PEAView />}
+                {view === 'crypto' && <CryptoView />}
+                {view === 'settings' && <SettingsView />}
+              </div>
+
+              <div className={`fixed bottom-0 left-0 right-0 border-t backdrop-blur-lg ${darkMode ? "border-gray-700 bg-gray-800/95" : "border-gray-200 bg-white/95"}`}>
+                <div className="mx-auto flex max-w-2xl justify-around px-2 py-2">
+                  <button onClick={() => setView('dashboard')} className={`flex flex-col items-center gap-1 px-2 py-2 transition ${view === 'dashboard' ? 'text-indigo-600' : (darkMode ? 'text-gray-400' : 'text-gray-500')}`}>
+                    <Target size={22} /><span className="text-xs font-medium">Budget</span>
+                  </button>
+                  <button onClick={() => setView('pea')} className={`flex flex-col items-center gap-1 px-2 py-2 transition ${view === 'pea' ? 'text-teal-600' : (darkMode ? 'text-gray-400' : 'text-gray-500')}`}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    <span className="text-xs font-medium">PEA</span>
+                  </button>
+                  <button onClick={() => setView('crypto')} className={`flex flex-col items-center gap-1 px-2 py-2 transition ${view === 'crypto' ? 'text-emerald-600' : (darkMode ? 'text-gray-400' : 'text-gray-500')}`}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                    <span className="text-xs font-medium">Crypto</span>
+                  </button>
+                  <button onClick={() => setView('historique')} className={`flex flex-col items-center gap-1 px-2 py-2 transition ${view === 'historique' ? 'text-indigo-600' : (darkMode ? 'text-gray-400' : 'text-gray-500')}`}>
+                    <List size={22} /><span className="text-xs font-medium">Historique</span>
+                  </button>
+                  <button onClick={() => setView('stats')} className={`flex flex-col items-center gap-1 px-2 py-2 transition ${view === 'stats' ? 'text-indigo-600' : (darkMode ? 'text-gray-400' : 'text-gray-500')}`}>
+                    <PieChart size={22} /><span className="text-xs font-medium">Stats</span>
+                  </button>
+                  <button onClick={() => setView('settings')} className={`flex flex-col items-center gap-1 px-2 py-2 transition ${view === 'settings' ? 'text-indigo-600' : (darkMode ? 'text-gray-400' : 'text-gray-500')}`}>
+                    <Settings size={22} /><span className="text-xs font-medium">Paramètres</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal détail catégorie */}
+              {showCategoryDetail && (
+                <div className={`fixed inset-0 z-50 flex items-end justify-center backdrop-blur-sm sm:items-center ${darkMode ? "bg-black/70" : "bg-black/50"}`} onClick={() => setShowCategoryDetail(null)}>
+                  <div className={`w-full max-w-md animate-slide-up rounded-t-3xl p-6 shadow-2xl sm:rounded-3xl ${darkMode ? "bg-gray-800" : "bg-white"}`} onClick={e => e.stopPropagation()}>
+                    <div className="mb-4 flex items-center justify-between">
+                      <h3 className={`text-xl font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>
+                        {monthlyBudget.categories[showCategoryDetail].nom}
+                      </h3>
+                      <button onClick={() => setShowCategoryDetail(null)} className={`hover:text-gray-700 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>✕</button>
+                    </div>
+                    
+                    {(() => {
+                      const catDepenses = depenses.filter(d => {
+                        const dDate = new Date(d.date);
+                        const now = new Date();
+                        return d.categorie === showCategoryDetail && 
+                               dDate.getMonth() === now.getMonth() && 
+                               dDate.getFullYear() === now.getFullYear();
+                      });
+
+                      return catDepenses.length === 0 ? (
+                        <div className={`rounded-xl p-8 text-center ${darkMode ? "bg-gray-700" : "bg-gray-50"}`}>
+                          <p className={darkMode ? "text-gray-400" : "text-gray-600"}>Aucune dépense ce mois-ci</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2 max-h-96 overflow-y-auto">
+                          {catDepenses.map(dep => (
+                            <div key={dep.id} className={`rounded-xl p-3 ${darkMode ? "bg-gray-700" : "bg-gray-50"}`}>
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  {dep.description && <div className={`font-semibold ${darkMode ? "text-white" : "text-gray-800"}`}>{dep.description}</div>}
+                                  <div className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>{new Date(dep.date).toLocaleDateString('fr-FR')}</div>
+                                </div>
+                                <div className={`text-lg font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>{formatMoney(dep.montant)}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+              )}
+
+              {/* Modal gestion des charges fixes */}
+              {showChargesModal && (
+                <div className={`fixed inset-0 z-50 flex items-end justify-center backdrop-blur-sm sm:items-center ${darkMode ? "bg-black/70" : "bg-black/50"}`} onClick={() => setShowChargesModal(false)}>
+                  <div className={`w-full max-w-md animate-slide-up rounded-t-3xl p-6 shadow-2xl sm:rounded-3xl max-h-[80vh] overflow-y-auto ${darkMode ? "bg-gray-800" : "bg-white"}`} onClick={e => e.stopPropagation()}>
+                    <div className="mb-4 flex items-center justify-between">
+                      <h3 className={`text-xl font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>Gestion des charges fixes</h3>
+                      <button onClick={() => setShowChargesModal(false)} className={`hover:text-gray-700 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>✕</button>
+                    </div>
+                    
+                    <div className="mb-4">
+                      <button
+                        onClick={() => {
+                          setShowChargesModal(false);
+                          setShowChargesForm(true);
+                        }}
+                        className="w-full rounded-xl bg-indigo-600 px-4 py-3 font-semibold text-white transition hover:bg-indigo-700"
+                      >
+                        + Ajouter une charge fixe
+                      </button>
+                    </div>
+
+                    <div className="space-y-2">
+                      {chargesFixesAuto
+                        .sort((a, b) => a.jourPaiement - b.jourPaiement)
+                        .map(charge => {
+                        const isPaid = chargesPayees[getCurrentMonthKey()]?.[charge.id];
+                        
+                        return (
+                          <div 
+                            key={charge.id} 
+                            className={`flex items-center justify-between rounded-xl p-4 transition ${
+                              isPaid ? 'bg-green-50' : 'bg-orange-50'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3 flex-1">
+                              <input
+                                type="checkbox"
+                                checked={isPaid || false}
+                                onChange={() => toggleChargePaiement(charge.id)}
+                                className={`h-5 w-5 cursor-pointer rounded text-indigo-600 focus:ring-2 focus:ring-indigo-500 ${darkMode ? "bg-gray-700 border-gray-600" : "border-gray-300"}`}
+                              />
+                              <div className="flex-1">
+                                <div className={`font-semibold ${isPaid ? (darkMode ? "text-green-400 line-through" : "text-green-800 line-through") : (darkMode ? "text-white" : "text-gray-800")}`}>
+                                  {charge.nom}
+                                </div>
+                                <div className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+                                  Prélevé le {charge.jourPaiement} du mois
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <div className={`font-bold ${isPaid ? (darkMode ? "text-green-400" : "text-green-700") : (darkMode ? "text-orange-400" : "text-orange-700")}`}>
+                                {formatMoney(charge.montant)}
+                              </div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (confirm(`Supprimer "${charge.nom}" ?`)) {
+                                    handleDeleteCharge(charge.id);
+                                  }
+                                }}
+                                className={`rounded-lg px-2 py-1 text-xs hover:bg-red-200 ${darkMode ? "bg-red-900/40 text-red-300 hover:bg-red-900/60" : "bg-red-100 text-red-600"}`}
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className={`mt-6 rounded-xl p-4 ${darkMode ? "bg-gray-700" : "bg-gray-50"}`}>
+                      <div className="flex justify-between items-center">
+                        <span className={`font-semibold ${darkMode ? "text-white" : "text-gray-800"}`}>Total charges fixes</span>
+                        <span className={`text-2xl font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
+                          {formatMoney(chargesFixesAuto.reduce((sum, charge) => sum + parseAmount(charge.montant), 0))}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Modal ajout de revenu */}
+              {showRevenuForm && (
+                <div className={`fixed inset-0 z-50 flex items-end justify-center backdrop-blur-sm sm:items-center ${darkMode ? "bg-black/70" : "bg-black/50"}`}>
+                  <div className={`w-full max-w-md animate-slide-up rounded-t-3xl p-6 shadow-2xl sm:rounded-3xl ${darkMode ? "bg-gray-800" : "bg-white"}`}>
+                    <h3 className={`mb-4 text-xl font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>Ajouter un revenu</h3>
+                    
+                    <form onSubmit={handleAddRevenu} className="space-y-4">
+                      <div>
+                        <label className={`mb-1 block text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>Type de revenu</label>
+                        <select
+                          value={newRevenu.type}
+                          onChange={(e) => setNewRevenu({...newRevenu, type: e.target.value})}
+                          className={`w-full rounded-xl border px-4 py-3 focus:outline-none focus:ring-2 ${darkMode ? "bg-gray-700 border-gray-600 text-white focus:border-indigo-400 focus:ring-indigo-500/50" : "border-gray-300 focus:border-indigo-500 focus:ring-indigo-200"}`}
+                        >
+                          <option value="Salaire">Salaire</option>
+                          <option value="CAF">CAF</option>
+                          <option value="Virement">Virement</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label className={`mb-1 block text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>Montant (€)</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={newRevenu.montant}
+                          onChange={(e) => setNewRevenu({...newRevenu, montant: e.target.value})}
+                          className={`w-full rounded-xl border px-4 py-3 focus:outline-none focus:ring-2 ${darkMode ? "bg-gray-700 border-gray-600 text-white focus:border-indigo-400 focus:ring-indigo-500/50" : "border-gray-300 focus:border-indigo-500 focus:ring-indigo-200"}`}
+                          placeholder="0.00"
+                          required
+                        />
+                      </div>
+                      
+                      <div className={`rounded-lg p-3 text-sm ${darkMode ? "bg-green-900/30 text-green-300" : "bg-green-50 text-green-800"}`}>
+                        💰 Le montant sera ajouté à votre solde actuel
+                      </div>
+                      
+                      <div className="flex gap-3 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowRevenuForm(false)}
+                          className={`flex-1 rounded-xl border-2 py-3 font-semibold transition ${darkMode ? "border-gray-600 bg-gray-700 text-gray-300 hover:bg-gray-600" : "border-gray-300 text-gray-700 hover:bg-gray-50"}`}
+                        >
+                          Annuler
+                        </button>
+                        <button
+                          type="submit"
+                          className="flex-1 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 py-3 font-semibold text-white shadow-lg transition hover:shadow-xl active:scale-95"
+                        >
+                          Ajouter
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+
+              {/* Modal charges fixes */}
+              {showChargesForm && (
+                <div className={`fixed inset-0 z-50 flex items-end justify-center backdrop-blur-sm sm:items-center ${darkMode ? "bg-black/70" : "bg-black/50"}`}>
+                  <div className={`w-full max-w-md animate-slide-up rounded-t-3xl p-6 shadow-2xl sm:rounded-3xl ${darkMode ? "bg-gray-800" : "bg-white"}`}>
+                    <h3 className={`mb-4 text-xl font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>Nouvelle charge fixe</h3>
+                    
+                    <form onSubmit={handleAddCharge} className="space-y-4">
+                      <div>
+                        <label className={`mb-1 block text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>Nom de la charge</label>
+                        <input type="text" value={newCharge.nom} onChange={(e) => setNewCharge({...newCharge, nom: e.target.value})} className={`w-full rounded-xl border px-4 py-3 focus:outline-none focus:ring-2 ${darkMode ? "bg-gray-700 border-gray-600 text-white focus:border-indigo-400 focus:ring-indigo-500/50" : "border-gray-300 focus:border-indigo-500 focus:ring-indigo-200"}`} placeholder="Ex: Loyer complémentaire, Netflix..." required />
+                      </div>
+                      
+                      <div>
+                        <label className={`mb-1 block text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>Montant (€)</label>
+                        <input type="number" step="0.01" value={newCharge.montant} onChange={(e) => setNewCharge({...newCharge, montant: e.target.value})} className={`w-full rounded-xl border px-4 py-3 focus:outline-none focus:ring-2 ${darkMode ? "bg-gray-700 border-gray-600 text-white focus:border-indigo-400 focus:ring-indigo-500/50" : "border-gray-300 focus:border-indigo-500 focus:ring-indigo-200"}`} placeholder="0.00" required />
+                      </div>
+                      
+                      <div>
+                        <label className={`mb-1 block text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>Jour du prélèvement</label>
+                        <select value={newCharge.jourPaiement} onChange={(e) => setNewCharge({...newCharge, jourPaiement: e.target.value})} className={`w-full rounded-xl border px-4 py-3 focus:outline-none focus:ring-2 ${darkMode ? "bg-gray-700 border-gray-600 text-white focus:border-indigo-400 focus:ring-indigo-500/50" : "border-gray-300 focus:border-indigo-500 focus:ring-indigo-200"}`}>
+                          {Array.from({length: 31}, (_, i) => i + 1).map(day => (
+                            <option key={day} value={day}>Le {day} du mois</option>
+                          ))}
+                        </select>
+                      </div>
+                      
+                      <div className={`rounded-lg p-3 text-sm ${darkMode ? "bg-blue-900/30 text-blue-300" : "bg-blue-50 text-blue-800"}`}>
+                        💡 Cette charge sera ajoutée automatiquement à vos charges fixes chaque mois. Cochez-la quand elle est payée.
+                      </div>
+                      
+                      <div className="flex gap-3 pt-2">
+                        <button type="button" onClick={() => setShowChargesForm(false)} className={`flex-1 rounded-xl border-2 py-3 font-semibold transition ${darkMode ? "border-gray-600 bg-gray-700 text-gray-300 hover:bg-gray-600" : "border-gray-300 text-gray-700 hover:bg-gray-50"}`}>Annuler</button>
+                        <button type="submit" className="flex-1 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 py-3 font-semibold text-white shadow-lg transition hover:shadow-xl active:scale-95">Ajouter</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+
+              {/* Modal ajout dépense */}
+              {showAddForm && (
+                <div className={`fixed inset-0 z-50 flex items-end justify-center backdrop-blur-sm sm:items-center ${darkMode ? "bg-black/70" : "bg-black/50"}`}>
+                  <div className={`w-full max-w-md animate-slide-up rounded-t-3xl p-6 shadow-2xl sm:rounded-3xl ${darkMode ? "bg-gray-800" : "bg-white"}`}>
+                    <h3 className={`mb-4 text-xl font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>Nouvelle dépense</h3>
+                    
+                    <form onSubmit={handleAddDepense} className="space-y-4">
+                      <div>
+                        <label className={`mb-1 block text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>Catégorie</label>
+                        <select value={newDepense.categorie} onChange={(e) => setNewDepense({...newDepense, categorie: e.target.value})} className={`w-full rounded-xl border px-4 py-3 focus:outline-none focus:ring-2 ${darkMode ? "bg-gray-700 border-gray-600 text-white focus:border-indigo-400 focus:ring-indigo-500/50" : "border-gray-300 focus:border-indigo-500 focus:ring-indigo-200"}`}>
+                          {Object.entries(monthlyBudget.categories).map(([key, cat]) => (
+                            <option key={key} value={key}>{cat.nom}</option>
+                          ))}
+                          <option value="exceptionnel">Charge exceptionnelle</option>
+                          <option value="depense">Dépense</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label className={`mb-1 block text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>Montant (€)</label>
+                        <input type="number" step="0.01" value={newDepense.montant} onChange={(e) => setNewDepense({...newDepense, montant: e.target.value})} className={`w-full rounded-xl border px-4 py-3 focus:outline-none focus:ring-2 ${darkMode ? "bg-gray-700 border-gray-600 text-white focus:border-indigo-400 focus:ring-indigo-500/50" : "border-gray-300 focus:border-indigo-500 focus:ring-indigo-200"}`} placeholder="0.00" required />
+                      </div>
+                      
+                      <div>
+                        <label className={`mb-1 block text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>Description (optionnelle)</label>
+                        <input type="text" value={newDepense.description} onChange={(e) => setNewDepense({...newDepense, description: e.target.value})} className={`w-full rounded-xl border px-4 py-3 focus:outline-none focus:ring-2 ${darkMode ? "bg-gray-700 border-gray-600 text-white focus:border-indigo-400 focus:ring-indigo-500/50" : "border-gray-300 focus:border-indigo-500 focus:ring-indigo-200"}`} placeholder="Ex: Billet de train Paris" />
+                      </div>
+                      
+                      <div>
+                        <label className={`mb-1 block text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>Date</label>
+                        <input type="date" value={newDepense.date} onChange={(e) => setNewDepense({...newDepense, date: e.target.value})} className={`w-full rounded-xl border px-4 py-3 focus:outline-none focus:ring-2 ${darkMode ? "bg-gray-700 border-gray-600 text-white focus:border-indigo-400 focus:ring-indigo-500/50" : "border-gray-300 focus:border-indigo-500 focus:ring-indigo-200"}`} required />
+                      </div>
+                      
+                      <div className={`rounded-xl p-4 ${darkMode ? "bg-blue-900/30" : "bg-blue-50"}`}>
+                        <label className="flex items-start gap-3 cursor-pointer">
+                          <input type="checkbox" checked={newDepense.deduireDuSolde} onChange={(e) => setNewDepense({...newDepense, deduireDuSolde: e.target.checked})} className={`mt-0.5 h-5 w-5 rounded text-indigo-600 focus:ring-2 focus:ring-indigo-500 ${darkMode ? "bg-gray-700 border-gray-600" : "border-gray-300"}`} />
+                          <div className="flex-1">
+                            <div className={`text-sm font-semibold ${darkMode ? "text-blue-300" : "text-blue-900"}`}>Déduire automatiquement du solde</div>
+                            <div className={`text-xs mt-1 ${darkMode ? "text-blue-400" : "text-blue-700"}`}>Décochez si vous ajoutez une dépense passée et avez déjà renseigné votre solde actuel</div>
+                          </div>
+                        </label>
+                      </div>
+                      
+                      <div className="flex gap-3 pt-2">
+                        <button type="button" onClick={() => setShowAddForm(false)} className={`flex-1 rounded-xl border-2 py-3 font-semibold transition ${darkMode ? "border-gray-600 bg-gray-700 text-gray-300 hover:bg-gray-600" : "border-gray-300 text-gray-700 hover:bg-gray-50"}`}>Annuler</button>
+                        <button type="submit" className="flex-1 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 py-3 font-semibold text-white shadow-lg transition hover:shadow-xl active:scale-95">Ajouter</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+
+              <style>{`
+                @keyframes slide-up {
+                  from { transform: translateY(100%); opacity: 0; }
+                  to { transform: translateY(0); opacity: 1; }
+                }
+                .animate-slide-up { animation: slide-up 0.3s ease-out; }
+              `}</style>
+            </div>
+          );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<BudgetTracker />);
+    </script>
+</body>
+</html>
