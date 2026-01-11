@@ -192,6 +192,20 @@
 
           // Écouter l'état d'authentification Firebase
           useEffect(() => {
+            // Gérer le retour de la redirection Google (important pour PWA)
+            auth.getRedirectResult()
+              .then((result) => {
+                if (result.user) {
+                  console.log('✅ Connexion réussie via redirect:', result.user.email);
+                }
+              })
+              .catch((error) => {
+                console.error('Erreur redirect:', error);
+                if (error.code === 'auth/popup-blocked') {
+                  alert('Les popups sont bloquées. Utilisez le mode navigation ou autorisez les popups.');
+                }
+              });
+            
             const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
               setUser(currentUser);
               
@@ -577,7 +591,8 @@
               prompt: 'select_account'
             });
             try {
-              await auth.signInWithPopup(provider);
+              // Utiliser redirect au lieu de popup pour compatibilité PWA
+              await auth.signInWithRedirect(provider);
             } catch (error) {
               console.error('Erreur connexion:', error);
               alert('Erreur lors de la connexion. Veuillez réessayer.');
