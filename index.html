@@ -46,6 +46,15 @@
       firebase.initializeApp(firebaseConfig);
       const auth = firebase.auth();
       const db = firebase.firestore();
+      
+      // IMPORTANT : Activer la persistence locale (pour PWA)
+      auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+        .then(() => {
+          console.log('✅ Persistence activée');
+        })
+        .catch((error) => {
+          console.error('Erreur persistence:', error);
+        });
     </script>
     
     <style>
@@ -204,9 +213,13 @@
                 if (error.code === 'auth/popup-blocked') {
                   alert('Les popups sont bloquées. Utilisez le mode navigation ou autorisez les popups.');
                 }
+              })
+              .finally(() => {
+                // Continuer le chargement même en cas d'erreur
               });
             
             const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
+              console.log('Auth state changed:', currentUser ? currentUser.email : 'Non connecté');
               setUser(currentUser);
               
               if (currentUser) {
