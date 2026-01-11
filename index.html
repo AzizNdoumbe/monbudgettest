@@ -719,8 +719,8 @@
 
           // Écran de connexion
           if (!user) {
-            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                                 window.navigator.standalone;
+            // DÉSACTIVÉ TEMPORAIREMENT : problème de détection standalone
+            const isStandalone = false;
             const currentUrl = window.location.href;
             
             return (
