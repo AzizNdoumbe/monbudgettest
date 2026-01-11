@@ -179,6 +179,8 @@
           const [soldePEA, setSoldePEA] = useState(0);
           const [soldeCrypto, setSoldeCrypto] = useState(0);
           const [depenses, setDepenses] = useState([]);
+          const [statsArchivees, setStatsArchivees] = useState({});
+          // Structure: { "2026-0": { depenses: {...}, total: 0, date: Date }, "2026-1": {...} }
           const [chargesFixesAuto, setChargesFixesAuto] = useState([]);
           const [chargesPayees, setChargesPayees] = useState({});
           const [showAddForm, setShowAddForm] = useState(false);
@@ -264,6 +266,7 @@
                   setSoldePEA(data.soldePEA || 0);
                   setSoldeCrypto(data.soldeCrypto || 0);
                   setDepenses(data.depenses || []);
+                  setStatsArchivees(data.statsArchivees || {});
                   setChargesFixesAuto(data.chargesFixesAuto || []);
                   setChargesPayees(data.chargesPayees || {});
                   setDarkMode(data.darkMode || false);
@@ -314,6 +317,7 @@
                 soldePEA,
                 soldeCrypto,
                 depenses,
+                statsArchivees,
                 chargesFixesAuto,
                 chargesPayees,
                 monthlyBudget,
@@ -339,7 +343,59 @@
                 clearTimeout(saveTimeoutRef.current);
               }
             };
-          }, [user, soldeCompte, soldePEA, soldeCrypto, depenses, chargesFixesAuto, chargesPayees, monthlyBudget]);
+          }, [user, soldeCompte, soldePEA, soldeCrypto, depenses, statsArchivees, chargesFixesAuto, chargesPayees, monthlyBudget]);
+
+          // Archivage automatique des statistiques chaque mois
+          useEffect(() => {
+            const checkMonthChange = () => {
+              const now = new Date();
+              const currentMonthKey = `${now.getFullYear()}-${now.getMonth()}`;
+              const lastChecked = localStorage.getItem('lastMonthChecked');
+              
+              if (lastChecked && lastChecked !== currentMonthKey) {
+                // Nouveau mois détecté, archiver le mois précédent
+                const lastMonthParts = lastChecked.split('-');
+                const lastYear = parseInt(lastMonthParts[0]);
+                const lastMonth = parseInt(lastMonthParts[1]);
+                
+                // Calculer totaux du mois précédent
+                const totauxMoisPrecedent = {};
+                Object.keys(monthlyBudget.categories).forEach(key => {
+                  totauxMoisPrecedent[key] = 0;
+                });
+                totauxMoisPrecedent['exceptionnel'] = 0;
+                totauxMoisPrecedent['depense'] = 0;
+                
+                depenses.forEach(dep => {
+                  const depDate = new Date(dep.date);
+                  if (depDate.getMonth() === lastMonth && depDate.getFullYear() === lastYear) {
+                    totauxMoisPrecedent[dep.categorie] = (totauxMoisPrecedent[dep.categorie] || 0) + parseAmount(dep.montant);
+                  }
+                });
+                
+                const totalMoisPrecedent = Object.values(totauxMoisPrecedent).reduce((sum, val) => sum + val, 0);
+                
+                // Archiver
+                setStatsArchivees(prev => ({
+                  ...prev,
+                  [lastChecked]: {
+                    depenses: totauxMoisPrecedent,
+                    total: totalMoisPrecedent,
+                    date: new Date(lastYear, lastMonth, 1)
+                  }
+                }));
+                
+                console.log(`📊 Stats de ${lastChecked} archivées automatiquement`);
+              }
+              
+              localStorage.setItem('lastMonthChecked', currentMonthKey);
+            };
+            
+            checkMonthChange();
+            const interval = setInterval(checkMonthChange, 3600000); // Check toutes les heures
+            
+            return () => clearInterval(interval);
+          }, [depenses, monthlyBudget.categories]);
 
           // Système de notifications pour charges programmées
           useEffect(() => {
@@ -535,6 +591,11 @@
           };
 
           const handleDeleteDepense = (id) => {
+            const depense = depenses.find(d => d.id === id);
+            if (depense && depense.deduireDuSolde !== false) {
+              // Restituer le montant au solde réel
+              setSoldeCompte(prevSolde => prevSolde + parseAmount(depense.montant));
+            }
             setDepenses(depenses.filter(d => d.id !== id));
           };
 
@@ -985,17 +1046,110 @@
           };
 
           const StatsView = () => {
-            const total = Object.values(monthlyTotals).reduce((sum, val) => sum + val, 0);
+            const [selectedMonthKey, setSelectedMonthKey] = useState(() => {
+              const now = new Date();
+              return `${now.getFullYear()}-${now.getMonth()}`;
+            });
+            
+            // Calculer totaux pour le mois sélectionné
+            const getMonthTotals = (monthKey) => {
+              const [year, month] = monthKey.split('-').map(Number);
+              const totals = {};
+              Object.keys(monthlyBudget.categories).forEach(key => {
+                totals[key] = 0;
+              });
+              totals['exceptionnel'] = 0;
+              totals['depense'] = 0;
+              
+              depenses.forEach(dep => {
+                const depDate = new Date(dep.date);
+                if (depDate.getMonth() === month && depDate.getFullYear() === year) {
+                  totals[dep.categorie] = (totals[dep.categorie] || 0) + parseAmount(dep.montant);
+                }
+              });
+              
+              return totals;
+            };
+            
+            const currentMonthKey = (() => {
+              const now = new Date();
+              return `${now.getFullYear()}-${now.getMonth()}`;
+            })();
+            
+            const isCurrentMonth = selectedMonthKey === currentMonthKey;
+            
+            // Si mois actuel, calculer en temps réel, sinon prendre archive
+            const displayTotals = isCurrentMonth 
+              ? getMonthTotals(selectedMonthKey)
+              : (statsArchivees[selectedMonthKey]?.depenses || {});
+            
+            const total = Object.values(displayTotals).reduce((sum, val) => sum + val, 0);
+            
+            const getMonthName = (monthKey) => {
+              const [year, month] = monthKey.split('-').map(Number);
+              const date = new Date(year, month);
+              return date.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+            };
+            
+            // Liste des mois disponibles (mois actuel + archives)
+            const availableMonths = [
+              currentMonthKey,
+              ...Object.keys(statsArchivees).sort().reverse()
+            ].filter((v, i, a) => a.indexOf(v) === i); // Dédupliquer
             
             return (
               <div className="space-y-6">
-                <h3 className={`text-2xl font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>Statistiques {getCurrentMonth()}</h3>
+                <h3 className={`text-2xl font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>
+                  📊 Statistiques {getMonthName(selectedMonthKey)}
+                </h3>
                 
+                {/* Sélecteur de mois - uniquement si plusieurs mois */}
+                {availableMonths.length > 1 && (
+                  <div className={`rounded-2xl p-4 ${darkMode ? "bg-gray-800" : "bg-white"}`}>
+                    <h4 className={`mb-3 text-sm font-medium ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+                      📅 Historique
+                    </h4>
+                    <div className="space-y-2">
+                      {availableMonths.map(monthKey => (
+                        <button
+                          key={monthKey}
+                          onClick={() => setSelectedMonthKey(monthKey)}
+                          className={`w-full rounded-lg px-4 py-3 text-left text-sm font-medium transition ${
+                            selectedMonthKey === monthKey
+                              ? darkMode
+                                ? "bg-indigo-600 text-white"
+                                : "bg-indigo-500 text-white"
+                              : darkMode
+                                ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span>{getMonthName(monthKey)}</span>
+                            {monthKey === currentMonthKey && (
+                              <span className={`text-xs px-2 py-0.5 rounded ${
+                                selectedMonthKey === monthKey 
+                                  ? "bg-white/20 text-white" 
+                                  : darkMode ? "bg-indigo-900/30 text-indigo-300" : "bg-indigo-100 text-indigo-700"
+                              }`}>
+                                En cours
+                              </span>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Stats du mois sélectionné */}
                 <div className={`rounded-2xl p-6 shadow-lg ${darkMode ? "bg-gray-800" : "bg-white"}`}>
-                  <h4 className={`mb-4 font-bold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>Répartition des dépenses</h4>
+                  <h4 className={`mb-4 font-bold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+                    Répartition des dépenses
+                  </h4>
                   <div className="space-y-3">
                     {Object.entries(monthlyBudget.categories).map(([key, cat]) => {
-                      const depense = monthlyTotals[key] || 0;
+                      const depense = displayTotals[key] || 0;
                       const pourcentage = total > 0 ? (depense / total) * 100 : 0;
                       
                       return (
@@ -1020,21 +1174,24 @@
                     })}
                     
                     {/* Autre (Dépenses + Charges exceptionnelles) */}
-                    {(monthlyTotals['exceptionnel'] > 0 || monthlyTotals['depense'] > 0) && (
+                    {(displayTotals['exceptionnel'] > 0 || displayTotals['depense'] > 0) && (
                       <div>
                         <div className="mb-1 flex items-center justify-between text-sm">
                           <span className={`font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>Autre</span>
-                          <span className={`font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>{formatMoney((monthlyTotals['exceptionnel'] || 0) + (monthlyTotals['depense'] || 0))}</span>
+                          <span className={`font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>
+                            {formatMoney((displayTotals['exceptionnel'] || 0) + (displayTotals['depense'] || 0))}
+                          </span>
                         </div>
                         <div className={`relative h-8 overflow-hidden rounded-lg ${darkMode ? "bg-gray-700" : "bg-gray-100"}`}>
                           <div
                             className="flex h-full items-center justify-end px-3 text-xs font-bold text-white transition-all duration-500"
                             style={{
-                              width: `${total > 0 ? (((monthlyTotals['exceptionnel'] || 0) + (monthlyTotals['depense'] || 0)) / total) * 100 : 0}%`,
+                              width: `${total > 0 ? (((displayTotals['exceptionnel'] || 0) + (displayTotals['depense'] || 0)) / total) * 100 : 0}%`,
                               backgroundColor: '#6B7280'
                             }}
                           >
-                            {total > 0 && (((monthlyTotals['exceptionnel'] || 0) + (monthlyTotals['depense'] || 0)) / total) * 100 > 15 && `${((((monthlyTotals['exceptionnel'] || 0) + (monthlyTotals['depense'] || 0)) / total) * 100).toFixed(0)}%`}
+                            {total > 0 && (((displayTotals['exceptionnel'] || 0) + (displayTotals['depense'] || 0)) / total) * 100 > 15 && 
+                              `${((((displayTotals['exceptionnel'] || 0) + (displayTotals['depense'] || 0)) / total) * 100).toFixed(0)}%`}
                           </div>
                         </div>
                       </div>
@@ -1042,8 +1199,12 @@
                   </div>
                   
                   <div className={`mt-6 rounded-xl p-4 ${darkMode ? "bg-indigo-900/30" : "bg-indigo-50"}`}>
-                    <div className={`text-sm ${darkMode ? "text-indigo-400" : "text-indigo-700"}`}>Total dépensé ce mois</div>
-                    <div className={`text-3xl font-bold ${darkMode ? "text-indigo-200" : "text-indigo-900"}`}>{formatMoney(total)}</div>
+                    <div className={`text-sm ${darkMode ? "text-indigo-400" : "text-indigo-700"}`}>
+                      Total dépensé {isCurrentMonth ? "ce mois" : ""}
+                    </div>
+                    <div className={`text-3xl font-bold ${darkMode ? "text-indigo-200" : "text-indigo-900"}`}>
+                      {formatMoney(total)}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1063,6 +1224,19 @@
             
             const totalVersementsMois = versementsMois.reduce((sum, dep) => sum + dep.montant, 0);
 
+            // Calculer les projections pour affichage
+            const versementMensuel = monthlyBudget.categories.pea?.budget || 100;
+            const tauxAnnuel = 0.07;
+            const calculerValeurFuture = (annees) => {
+              const mois = annees * 12;
+              const tauxMensuel = tauxAnnuel / 12;
+              return versementMensuel * (((1 + tauxMensuel) ** mois - 1) / tauxMensuel) * (1 + tauxMensuel);
+            };
+            const projection10ans = calculerValeurFuture(10);
+            const projection20ans = calculerValeurFuture(20);
+            const projection30ans = calculerValeurFuture(30);
+            const projection50ans = calculerValeurFuture(50);
+
             // Créer graphique de projection avec intérêts composés
             useEffect(() => {
               if (chartRef.current && view === 'pea') {
@@ -1074,7 +1248,7 @@
 
                 // Calcul avec intérêts composés à 7% annuel
                 const tauxAnnuel = 0.07;
-                const versementMensuel = 100; // Budget PEA mensuel
+                const versementMensuel = monthlyBudget.categories.pea?.budget || 100; // Budget PEA mensuel depuis les paramètres
                 
                 const calculerValeurFuture = (annees) => {
                   const mois = annees * 12;
@@ -1144,7 +1318,7 @@
                   chartInstance.current.destroy();
                 }
               };
-            }, [view]);
+            }, [view, monthlyBudget.categories.pea]);
             
             return (
               <div className="space-y-6">
@@ -1253,7 +1427,7 @@
                 <div className={`rounded-2xl p-6 shadow-lg ${darkMode ? "bg-gray-800" : "bg-white"}`}>
                   <h4 className={`mb-2 text-xl font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>🚀 Projection sur le long terme</h4>
                   <p className={`mb-4 text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
-                    Avec {formatMoney(100)} / mois et un rendement annuel de 7% (moyenne historique des marchés)
+                    Avec {formatMoney(monthlyBudget.categories.pea?.budget || 100)} / mois et un rendement annuel de 7% (moyenne historique des marchés)
                   </p>
                   
                   <div style={{ height: '300px' }}>
@@ -1263,19 +1437,27 @@
                   <div className="mt-4 grid grid-cols-2 gap-3">
                     <div className={`rounded-lg p-3 ${darkMode ? "bg-teal-900/30" : "bg-teal-50"}`}>
                       <div className={`text-xs ${darkMode ? "text-teal-300" : "text-teal-700"}`}>Dans 10 ans</div>
-                      <div className={`text-lg font-bold ${darkMode ? "text-teal-200" : "text-teal-900"}`}>≈ 17 409 €</div>
+                      <div className={`text-lg font-bold ${darkMode ? "text-teal-200" : "text-teal-900"}`}>
+                        ≈ {formatMoney(projection10ans).replace(',00', '')}
+                      </div>
                     </div>
                     <div className={`rounded-lg p-3 ${darkMode ? "bg-cyan-900/30" : "bg-cyan-50"}`}>
                       <div className={`text-xs ${darkMode ? "text-cyan-300" : "text-cyan-700"}`}>Dans 20 ans</div>
-                      <div className={`text-lg font-bold ${darkMode ? "text-cyan-200" : "text-cyan-900"}`}>≈ 52 397 €</div>
+                      <div className={`text-lg font-bold ${darkMode ? "text-cyan-200" : "text-cyan-900"}`}>
+                        ≈ {formatMoney(projection20ans).replace(',00', '')}
+                      </div>
                     </div>
                     <div className={`rounded-lg p-3 ${darkMode ? "bg-blue-900/30" : "bg-blue-50"}`}>
                       <div className={`text-xs ${darkMode ? "text-blue-300" : "text-blue-700"}`}>Dans 30 ans</div>
-                      <div className={`text-lg font-bold ${darkMode ? "text-blue-200" : "text-blue-900"}`}>≈ 122 709 €</div>
+                      <div className={`text-lg font-bold ${darkMode ? "text-blue-200" : "text-blue-900"}`}>
+                        ≈ {formatMoney(projection30ans).replace(',00', '')}
+                      </div>
                     </div>
                     <div className={`rounded-lg p-3 ${darkMode ? "bg-indigo-900/30" : "bg-indigo-50"}`}>
                       <div className={`text-xs ${darkMode ? "text-indigo-300" : "text-indigo-700"}`}>Dans 50 ans</div>
-                      <div className={`text-lg font-bold ${darkMode ? "text-indigo-200" : "text-indigo-900"}`}>≈ 528 936 €</div>
+                      <div className={`text-lg font-bold ${darkMode ? "text-indigo-200" : "text-indigo-900"}`}>
+                        ≈ {formatMoney(projection50ans).replace(',00', '')}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1513,15 +1695,16 @@
                         setNewCategoryName('');
                         setNewCategoryBudget('');
                         setNewCategoryColor('#6366F1');
-                        setNewCategoryShowInDashboard(true);
+                        setNewCategoryShowInDashboard(false);
                       }}
-                      className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                      className={`rounded-full h-10 w-10 flex items-center justify-center text-2xl font-bold transition ${
                         darkMode 
                           ? "bg-green-900/30 text-green-300 hover:bg-green-900/50" 
                           : "bg-green-50 text-green-700 hover:bg-green-100"
                       }`}
+                      title="Nouvelle catégorie"
                     >
-                      ➕ Nouvelle catégorie
+                      +
                     </button>
                   </div>
                   
@@ -1555,12 +1738,19 @@
                             />
                           </div>
                           <div className="flex items-center gap-2">
-                            <input
-                              type="color"
-                              value={newCategoryColor}
-                              onChange={(e) => setNewCategoryColor(e.target.value)}
-                              className="h-10 w-16 cursor-pointer rounded-lg border-2"
-                            />
+                            <label className="relative cursor-pointer">
+                              <input
+                                type="color"
+                                value={newCategoryColor}
+                                onChange={(e) => setNewCategoryColor(e.target.value)}
+                                className="absolute opacity-0 w-0 h-0"
+                              />
+                              <div 
+                                className="h-10 w-10 rounded-full border-2 border-gray-300 cursor-pointer hover:scale-110 transition-transform"
+                                style={{ backgroundColor: newCategoryColor }}
+                                title="Choisir une couleur"
+                              ></div>
+                            </label>
                           </div>
                         </div>
                         <label className="flex items-center gap-2 cursor-pointer">
@@ -1571,7 +1761,7 @@
                             className="h-5 w-5 cursor-pointer rounded"
                           />
                           <span className={`text-sm ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
-                            Afficher un encadré sur la page d'accueil
+                            Afficher sur la page d'accueil
                           </span>
                         </label>
                         <div className="flex gap-2">
@@ -1596,8 +1786,15 @@
                     </div>
                   )}
                   
+                  {/* Phrase explicative */}
+                  <div className={`mb-3 text-xs italic ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+                    💡 Les catégories marquées "Affichée sur l'accueil" apparaissent sous forme d'encadré sur la page principale
+                  </div>
+                  
                   <div className="space-y-3">
-                    {Object.entries(monthlyBudget.categories).map(([key, cat]) => (
+                    {/* Afficher TOUTES les catégories */}
+                    {Object.entries(monthlyBudget.categories)
+                      .map(([key, cat]) => (
                       <div 
                         key={key}
                         className={`rounded-lg p-4 ${darkMode ? "bg-gray-700" : "bg-gray-50"}`}
@@ -1630,12 +1827,19 @@
                                 />
                               </div>
                               <div className="flex items-center gap-2">
-                                <input
-                                  type="color"
-                                  value={newCategoryColor}
-                                  onChange={(e) => setNewCategoryColor(e.target.value)}
-                                  className="h-10 w-16 cursor-pointer rounded-lg border-2"
-                                />
+                                <label className="relative cursor-pointer">
+                                  <input
+                                    type="color"
+                                    value={newCategoryColor}
+                                    onChange={(e) => setNewCategoryColor(e.target.value)}
+                                    className="absolute opacity-0 w-0 h-0"
+                                  />
+                                  <div 
+                                    className="h-10 w-10 rounded-full border-2 border-gray-300 cursor-pointer hover:scale-110 transition-transform"
+                                    style={{ backgroundColor: newCategoryColor }}
+                                    title="Choisir une couleur"
+                                  ></div>
+                                </label>
                               </div>
                             </div>
                             <label className="flex items-center gap-2 cursor-pointer">
@@ -1646,7 +1850,7 @@
                                 className="h-5 w-5 cursor-pointer rounded"
                               />
                               <span className={`text-sm ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
-                                Afficher un encadré sur la page d'accueil
+                                Afficher sur la page d'accueil
                               </span>
                             </label>
                             <div className="flex gap-2">
@@ -1692,22 +1896,21 @@
                                 style={{ backgroundColor: cat.color }}
                               ></div>
                               <div>
-                                <div className="flex items-center gap-2">
-                                  <div className={`font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>
-                                    {cat.nom}
-                                  </div>
-                                  {cat.showInDashboard && (
-                                    <span className={`text-xs px-2 py-0.5 rounded ${darkMode ? "bg-indigo-900/30 text-indigo-300" : "bg-indigo-100 text-indigo-700"}`}>
-                                      Principale
-                                    </span>
-                                  )}
+                                <div className={`font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>
+                                  {cat.nom}
                                 </div>
                                 <div className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
                                   Budget : {formatMoney(cat.budget)}
                                 </div>
+                                {cat.showInDashboard && (
+                                  <div className="text-xs italic text-orange-600 mt-0.5">
+                                    Affichée sur l'accueil
+                                  </div>
+                                )}
                               </div>
                             </div>
                             <div className="flex gap-2">
+                              {/* Bouton Éditer avec icône SVG */}
                               <button
                                 onClick={() => {
                                   setEditingCategory(key);
@@ -1716,23 +1919,30 @@
                                   setNewCategoryColor(cat.color);
                                   setNewCategoryShowInDashboard(cat.showInDashboard !== false);
                                 }}
-                                className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+                                className={`rounded-lg px-3 py-2 transition ${
                                   darkMode 
                                     ? "bg-indigo-900/30 text-indigo-300 hover:bg-indigo-900/50" 
                                     : "bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
                                 }`}
+                                title="Modifier"
                               >
-                                ✏️
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
                               </button>
+                              {/* Bouton Supprimer avec icône SVG */}
                               <button
                                 onClick={() => deleteCategory(key)}
-                                className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+                                className={`rounded-lg px-3 py-2 transition ${
                                   darkMode 
                                     ? "bg-red-900/30 text-red-300 hover:bg-red-900/50" 
                                     : "bg-red-50 text-red-700 hover:bg-red-100"
                                 }`}
+                                title="Supprimer"
                               >
-                                🗑️
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
                               </button>
                             </div>
                           </div>
