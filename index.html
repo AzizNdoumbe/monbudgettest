@@ -147,6 +147,7 @@
           // États Firebase
           const [user, setUser] = useState(null);
           const [loading, setLoading] = useState(true);
+          const [checkingRedirect, setCheckingRedirect] = useState(true);
           const [syncing, setSyncing] = useState(false);
           const saveTimeoutRef = useRef(null);
           const initialLoadRef = useRef(true);
@@ -204,8 +205,11 @@
             // Gérer le retour de la redirection Google (important pour PWA)
             auth.getRedirectResult()
               .then((result) => {
-                if (result.user) {
+                if (result && result.user) {
                   console.log('✅ Connexion réussie via redirect:', result.user.email);
+                  setUser(result.user);
+                } else {
+                  console.log('Pas de redirect en cours');
                 }
               })
               .catch((error) => {
@@ -215,14 +219,22 @@
                 }
               })
               .finally(() => {
-                // Continuer le chargement même en cas d'erreur
+                setCheckingRedirect(false);
               });
             
             const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
-              console.log('Auth state changed:', currentUser ? currentUser.email : 'Non connecté');
+              console.log('🔔 Auth state changed:', currentUser ? currentUser.email : 'Non connecté');
+              
+              // Attendre que la vérification du redirect soit terminée
+              if (checkingRedirect) {
+                console.log('⏳ Attente fin du redirect...');
+                return;
+              }
+              
               setUser(currentUser);
               
               if (currentUser) {
+                console.log('✅ Utilisateur connecté:', currentUser.email);
                 // Migration automatique depuis localStorage vers Firestore
                 const localData = localStorage.getItem('budgetTrackerData');
                 if (localData) {
@@ -239,6 +251,8 @@
                     console.error('Erreur migration:', error);
                   }
                 }
+              } else {
+                console.log('❌ Aucun utilisateur connecté');
               }
               
               setLoading(false);
@@ -250,7 +264,7 @@
             }
             
             return () => unsubscribe();
-          }, []);
+          }, [checkingRedirect]);
 
           // Charger les données depuis Firestore en temps réel
           useEffect(() => {
@@ -603,12 +617,33 @@
             provider.setCustomParameters({
               prompt: 'select_account'
             });
+            
+            // Détecter si on est en mode standalone (PWA)
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                                 window.navigator.standalone || 
+                                 document.referrer.includes('android-app://');
+            
             try {
-              // Utiliser redirect au lieu de popup pour compatibilité PWA
-              await auth.signInWithRedirect(provider);
+              if (isStandalone) {
+                // En mode PWA : utiliser redirect
+                await auth.signInWithRedirect(provider);
+              } else {
+                // En mode navigateur : utiliser popup
+                await auth.signInWithPopup(provider);
+              }
             } catch (error) {
               console.error('Erreur connexion:', error);
-              alert('Erreur lors de la connexion. Veuillez réessayer.');
+              // Si popup échoue, essayer redirect
+              if (error.code === 'auth/popup-blocked' || error.code === 'auth/cancelled-popup-request') {
+                try {
+                  await auth.signInWithRedirect(provider);
+                } catch (redirectError) {
+                  console.error('Erreur redirect:', redirectError);
+                  alert('Erreur lors de la connexion. Veuillez réessayer.');
+                }
+              } else {
+                alert('Erreur lors de la connexion. Veuillez réessayer.');
+              }
             }
           };
 
