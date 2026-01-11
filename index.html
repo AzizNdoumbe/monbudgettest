@@ -158,7 +158,6 @@
           // États Firebase
           const [user, setUser] = useState(null);
           const [loading, setLoading] = useState(true);
-          const [checkingRedirect, setCheckingRedirect] = useState(true);
           const [syncing, setSyncing] = useState(false);
           const saveTimeoutRef = useRef(null);
           const initialLoadRef = useRef(true);
@@ -213,36 +212,10 @@
 
           // Écouter l'état d'authentification Firebase
           useEffect(() => {
-            let redirectChecked = false;
-            
-            // Gérer le retour de la redirection Google (important pour PWA)
-            auth.getRedirectResult()
-              .then((result) => {
-                if (result && result.user) {
-                  console.log('✅ Connexion réussie via redirect:', result.user.email);
-                } else {
-                  console.log('📭 Pas de redirect en cours');
-                }
-              })
-              .catch((error) => {
-                console.error('❌ Erreur redirect:', error);
-                if (error.code === 'auth/popup-blocked') {
-                  alert('Les popups sont bloquées. Utilisez le mode navigation ou autorisez les popups.');
-                }
-              })
-              .finally(() => {
-                redirectChecked = true;
-                setCheckingRedirect(false);
-                console.log('🏁 Vérification redirect terminée');
-              });
-            
             const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
-              console.log('🔔 Auth state changed:', currentUser ? `✅ ${currentUser.email}` : '❌ Déconnecté');
-              
               setUser(currentUser);
               
               if (currentUser) {
-                console.log('👤 Chargement des données utilisateur...');
                 // Migration automatique depuis localStorage vers Firestore
                 const localData = localStorage.getItem('budgetTrackerData');
                 if (localData) {
@@ -256,11 +229,9 @@
                       console.log('✅ Migration localStorage → Firestore réussie');
                     }
                   } catch (error) {
-                    console.error('❌ Erreur migration:', error);
+                    console.error('Erreur migration:', error);
                   }
                 }
-              } else {
-                console.log('🚫 Aucun utilisateur - affichage écran de connexion');
               }
               
               setLoading(false);
@@ -625,83 +596,20 @@
             provider.setCustomParameters({
               prompt: 'select_account'
             });
-            
-            // Détecter si on est en mode standalone (PWA)
-            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                                 window.navigator.standalone || 
-                                 document.referrer.includes('android-app://');
-            
             try {
-              if (isStandalone) {
-                // En mode PWA : utiliser redirect
-                await auth.signInWithRedirect(provider);
-              } else {
-                // En mode navigateur : utiliser popup
-                await auth.signInWithPopup(provider);
-              }
+              await auth.signInWithPopup(provider);
             } catch (error) {
               console.error('Erreur connexion:', error);
-              // Si popup échoue, essayer redirect
-              if (error.code === 'auth/popup-blocked' || error.code === 'auth/cancelled-popup-request') {
-                try {
-                  await auth.signInWithRedirect(provider);
-                } catch (redirectError) {
-                  console.error('Erreur redirect:', redirectError);
-                  alert('Erreur lors de la connexion. Veuillez réessayer.');
-                }
-              } else {
-                alert('Erreur lors de la connexion. Veuillez réessayer.');
-              }
+              alert('Erreur lors de la connexion. Veuillez réessayer.');
             }
           };
 
           // Fonction de déconnexion
           const signOut = async () => {
             try {
-              console.log('🚪 Déconnexion en cours...');
-              
-              // Nettoyer le cache local avant de se déconnecter
-              localStorage.removeItem('budgetTrackerData');
-              
-              // Se déconnecter de Firebase
               await auth.signOut();
-              
-              console.log('✅ Déconnexion réussie');
-              
-              // En mode PWA, forcer un reload complet pour éviter les bugs de cache
-              const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                                   window.navigator.standalone || 
-                                   document.referrer.includes('android-app://');
-              
-              if (isStandalone) {
-                console.log('🔄 Reload complet (mode PWA)');
-                
-                // Sur iOS, nettoyer aussi sessionStorage et tous les états
-                try {
-                  sessionStorage.clear();
-                  // Nettoyer les clés Firebase du localStorage
-                  Object.keys(localStorage).forEach(key => {
-                    if (key.startsWith('firebase:')) {
-                      localStorage.removeItem(key);
-                    }
-                  });
-                } catch (e) {
-                  console.warn('Nettoyage storage:', e);
-                }
-                
-                // Attendre un peu que Firebase finisse de nettoyer
-                setTimeout(() => {
-                  window.location.reload(true); // true = force reload depuis serveur
-                }, 500);
-              }
             } catch (error) {
-              console.error('❌ Erreur déconnexion:', error);
-              // Même en cas d'erreur, forcer un reload en PWA
-              const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                                   window.navigator.standalone;
-              if (isStandalone) {
-                window.location.reload(true);
-              }
+              console.error('Erreur déconnexion:', error);
             }
           };
 
