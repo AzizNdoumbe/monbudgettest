@@ -47,14 +47,25 @@
       const auth = firebase.auth();
       const db = firebase.firestore();
       
-      // IMPORTANT : Activer la persistence locale (pour PWA)
-      auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
-        .then(() => {
-          console.log('✅ Persistence activée');
-        })
-        .catch((error) => {
-          console.error('Erreur persistence:', error);
-        });
+      // IMPORTANT : Configurer la persistence AVANT toute opération auth
+      // Pour iOS/PWA : essayer LOCAL, sinon fallback sur SESSION
+      const setupPersistence = async () => {
+        try {
+          await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+          console.log('✅ Persistence LOCAL activée');
+        } catch (error) {
+          console.warn('⚠️ LOCAL persistence échouée, essai SESSION:', error);
+          try {
+            await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
+            console.log('✅ Persistence SESSION activée');
+          } catch (sessionError) {
+            console.error('❌ Impossible de configurer persistence:', sessionError);
+          }
+        }
+      };
+      
+      // Lancer la config persistence immédiatement
+      setupPersistence();
     </script>
     
     <style>
@@ -202,39 +213,36 @@
 
           // Écouter l'état d'authentification Firebase
           useEffect(() => {
+            let redirectChecked = false;
+            
             // Gérer le retour de la redirection Google (important pour PWA)
             auth.getRedirectResult()
               .then((result) => {
                 if (result && result.user) {
                   console.log('✅ Connexion réussie via redirect:', result.user.email);
-                  setUser(result.user);
                 } else {
-                  console.log('Pas de redirect en cours');
+                  console.log('📭 Pas de redirect en cours');
                 }
               })
               .catch((error) => {
-                console.error('Erreur redirect:', error);
+                console.error('❌ Erreur redirect:', error);
                 if (error.code === 'auth/popup-blocked') {
                   alert('Les popups sont bloquées. Utilisez le mode navigation ou autorisez les popups.');
                 }
               })
               .finally(() => {
+                redirectChecked = true;
                 setCheckingRedirect(false);
+                console.log('🏁 Vérification redirect terminée');
               });
             
             const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
-              console.log('🔔 Auth state changed:', currentUser ? currentUser.email : 'Non connecté');
-              
-              // Attendre que la vérification du redirect soit terminée
-              if (checkingRedirect) {
-                console.log('⏳ Attente fin du redirect...');
-                return;
-              }
+              console.log('🔔 Auth state changed:', currentUser ? `✅ ${currentUser.email}` : '❌ Déconnecté');
               
               setUser(currentUser);
               
               if (currentUser) {
-                console.log('✅ Utilisateur connecté:', currentUser.email);
+                console.log('👤 Chargement des données utilisateur...');
                 // Migration automatique depuis localStorage vers Firestore
                 const localData = localStorage.getItem('budgetTrackerData');
                 if (localData) {
@@ -248,11 +256,11 @@
                       console.log('✅ Migration localStorage → Firestore réussie');
                     }
                   } catch (error) {
-                    console.error('Erreur migration:', error);
+                    console.error('❌ Erreur migration:', error);
                   }
                 }
               } else {
-                console.log('❌ Aucun utilisateur connecté');
+                console.log('🚫 Aucun utilisateur - affichage écran de connexion');
               }
               
               setLoading(false);
@@ -264,7 +272,7 @@
             }
             
             return () => unsubscribe();
-          }, [checkingRedirect]);
+          }, []);
 
           // Charger les données depuis Firestore en temps réel
           useEffect(() => {
@@ -650,9 +658,50 @@
           // Fonction de déconnexion
           const signOut = async () => {
             try {
+              console.log('🚪 Déconnexion en cours...');
+              
+              // Nettoyer le cache local avant de se déconnecter
+              localStorage.removeItem('budgetTrackerData');
+              
+              // Se déconnecter de Firebase
               await auth.signOut();
+              
+              console.log('✅ Déconnexion réussie');
+              
+              // En mode PWA, forcer un reload complet pour éviter les bugs de cache
+              const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                                   window.navigator.standalone || 
+                                   document.referrer.includes('android-app://');
+              
+              if (isStandalone) {
+                console.log('🔄 Reload complet (mode PWA)');
+                
+                // Sur iOS, nettoyer aussi sessionStorage et tous les états
+                try {
+                  sessionStorage.clear();
+                  // Nettoyer les clés Firebase du localStorage
+                  Object.keys(localStorage).forEach(key => {
+                    if (key.startsWith('firebase:')) {
+                      localStorage.removeItem(key);
+                    }
+                  });
+                } catch (e) {
+                  console.warn('Nettoyage storage:', e);
+                }
+                
+                // Attendre un peu que Firebase finisse de nettoyer
+                setTimeout(() => {
+                  window.location.reload(true); // true = force reload depuis serveur
+                }, 500);
+              }
             } catch (error) {
-              console.error('Erreur déconnexion:', error);
+              console.error('❌ Erreur déconnexion:', error);
+              // Même en cas d'erreur, forcer un reload en PWA
+              const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                                   window.navigator.standalone;
+              if (isStandalone) {
+                window.location.reload(true);
+              }
             }
           };
 
