@@ -13,7 +13,7 @@
     <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIk1vbiBCdWRnZXQiLAogICJzaG9ydF9uYW1lIjogIkJ1ZGdldCIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgInN0YXJ0X3VybCI6ICIuLyIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiI2ZmZmZmZiIsCiAgInRoZW1lX2NvbG9yIjogIiM2MzY2RjEiLAogICJpY29ucyI6IFsKICAgIHsKICAgICAgInNyYyI6ICJkYXRhOmltYWdlL3N2Zyt4bWw7YmFzZTY0LFBITjJaeUI0Yld4dWN6MGlhSFIwY0RvdkwzZDNkeTUzTXk1dmNtY3ZNakF3TUM5emRtY2lJSGRwWkhSb1BTSXlOVFlpSUdobGFXZG9kRDBpTWpVMklqNDhjbVZqZENCM2FXUjBhRDBpTWpVMklpQm9aV2xuYUhROUlqSTFOaUlnWm1sc2JEMGlJell6TmpaR01TSXZQanh3WVhSb0lHUTlJazB4TWpnZ09EQmpNQ0F5TkMweE9TQXlOQzAwTUNBd2N5MDBNQzB4TmkweE9TMHhOaUF4T1NBd0lEUXdJREUySURFMklERTJJREV6TGpVZ01qUXVOVWd5TlRKak1UQXVOU0F3SURFM0xqVXROeUF4Tnkwek9DNHhMVGt1TnkweExqSXRNaTQxTFRJdU55MDBMamN0TkM0eExUWXRPQzQwTFRndU5DMDRMalJJTlRaakxUSXVOUzB4TkMweE55MHlNUzQxTFRRd0xUSTBjeTB6Tnk0MUlERXdMalV0TkRBZ01qUmFJaUJtYVd4c1BTSWpabVptSWk4K1BDOXpkbWMrIiwKICAgICAgInNpemVzIjogImFueSIsCiAgICAgICJ0eXBlIjogImltYWdlL3N2Zyt4bWwiCiAgICB9CiAgXQp9">
     
     <!-- Apple Touch Icons -->
-    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNTYiIGhlaWdodD0iMjU2Ij48cmVjdCB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgZmlsbD0iIzYzNjZGMSIvPjxwYXRoIGQ9Ik0xMjggODBjMCAyNC0xOSAyNC00MCAwcy00MC0xNi0xOS0xNiAxOSAwIDQwIDE2IDE2IDEzLjUgMjQuNUgyNTJjMTAuNSAwIDE3LjUtNyAxNy0zOC4xLTkuNy0xLjItMi41LTIuNy00LjEtNi04LjQtOC40LTguNEg1NmMtMi41LTE0LTE3LTIxLjUtNDAtMjRzLTM3LjUgMTAuNS00MCAyNFoiIGZpbGw9IiNmZmYiLz48L3N2Zz4=">
+    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNTYiIGhlaWdodD0iMjU2Ij4KICA8cmVjdCB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgZmlsbD0iIzYzNjZGMSIgcng9IjQ4Ii8+CiAgPHRleHQgeD0iMTI4IiB5PSIxODAiIGZvbnQtc2l6ZT0iMTQwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj7wn5KwPC90ZXh0Pgo8L3N2Zz4K">
     
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -271,7 +271,18 @@
                   setChargesPayees(data.chargesPayees || {});
                   setDarkMode(data.darkMode || false);
                   if (data.monthlyBudget) {
-                    setMonthlyBudget(data.monthlyBudget);
+                    // Migration : ajouter showInDashboard aux catégories qui ne l'ont pas
+                    const migratedCategories = {};
+                    Object.entries(data.monthlyBudget.categories || {}).forEach(([key, cat]) => {
+                      migratedCategories[key] = {
+                        ...cat,
+                        showInDashboard: cat.showInDashboard !== undefined ? cat.showInDashboard : true
+                      };
+                    });
+                    setMonthlyBudget({
+                      ...data.monthlyBudget,
+                      categories: migratedCategories
+                    });
                   }
                   
                   // Après 200ms, on peut sauvegarder à nouveau
@@ -1621,13 +1632,34 @@
             };
             
             const deleteCategory = (key) => {
+              // Empêcher la suppression des catégories de base
+              const categoriesDeBase = ['copine', 'perso', 'pea', 'crypto'];
+              if (categoriesDeBase.includes(key)) {
+                alert(`Impossible de supprimer "${monthlyBudget.categories[key].nom}" car c'est une catégorie principale.\n\nVous pouvez la masquer de l'accueil en décochant l'option "Afficher sur la page d'accueil".`);
+                return;
+              }
+              
               if (confirm(`Supprimer la catégorie "${monthlyBudget.categories[key].nom}" ?\n\nAttention : Les dépenses de cette catégorie resteront dans l'historique.`)) {
                 const newCategories = { ...monthlyBudget.categories };
                 delete newCategories[key];
-                setMonthlyBudget({
+                const newMonthlyBudget = {
                   ...monthlyBudget,
                   categories: newCategories
-                });
+                };
+                setMonthlyBudget(newMonthlyBudget);
+                
+                // Sauvegarder immédiatement dans Firebase
+                if (user) {
+                  db.collection('users')
+                    .doc(user.uid)
+                    .collection('data')
+                    .doc('budget')
+                    .update({
+                      'monthlyBudget.categories': newCategories
+                    })
+                    .then(() => console.log(`✅ Catégorie ${key} supprimée de Firebase`))
+                    .catch((error) => console.error('Erreur suppression catégorie:', error));
+                }
               }
             };
             
@@ -1738,19 +1770,19 @@
                             />
                           </div>
                           <div className="flex items-center gap-2">
-                            <label className="relative cursor-pointer">
+                            <div className="relative h-10 w-10">
                               <input
                                 type="color"
                                 value={newCategoryColor}
                                 onChange={(e) => setNewCategoryColor(e.target.value)}
-                                className="absolute opacity-0 w-0 h-0"
+                                className="absolute inset-0 opacity-0 cursor-pointer h-full w-full"
                               />
                               <div 
-                                className="h-10 w-10 rounded-full border-2 border-gray-300 cursor-pointer hover:scale-110 transition-transform"
+                                className="h-full w-full rounded-full border-2 border-gray-300"
                                 style={{ backgroundColor: newCategoryColor }}
                                 title="Choisir une couleur"
                               ></div>
-                            </label>
+                            </div>
                           </div>
                         </div>
                         <label className="flex items-center gap-2 cursor-pointer">
@@ -1792,8 +1824,23 @@
                   </div>
                   
                   <div className="space-y-3">
-                    {/* Afficher TOUTES les catégories */}
+                    {/* Afficher TOUTES les catégories dans un ordre stable */}
                     {Object.entries(monthlyBudget.categories)
+                      .sort(([keyA], [keyB]) => {
+                        // Catégories de base en premier dans l'ordre fixe
+                        const categoriesDeBase = ['copine', 'perso', 'pea', 'crypto'];
+                        const indexA = categoriesDeBase.indexOf(keyA);
+                        const indexB = categoriesDeBase.indexOf(keyB);
+                        
+                        // Si les deux sont des catégories de base, garder l'ordre défini
+                        if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+                        // Si A est de base et B custom, A avant
+                        if (indexA !== -1) return -1;
+                        // Si B est de base et A custom, B avant
+                        if (indexB !== -1) return 1;
+                        // Les deux sont custom : ordre alphabétique
+                        return keyA.localeCompare(keyB);
+                      })
                       .map(([key, cat]) => (
                       <div 
                         key={key}
@@ -1827,19 +1874,19 @@
                                 />
                               </div>
                               <div className="flex items-center gap-2">
-                                <label className="relative cursor-pointer">
+                                <div className="relative h-10 w-10">
                                   <input
                                     type="color"
                                     value={newCategoryColor}
                                     onChange={(e) => setNewCategoryColor(e.target.value)}
-                                    className="absolute opacity-0 w-0 h-0"
+                                    className="absolute inset-0 opacity-0 cursor-pointer h-full w-full"
                                   />
                                   <div 
-                                    className="h-10 w-10 rounded-full border-2 border-gray-300 cursor-pointer hover:scale-110 transition-transform"
+                                    className="h-full w-full rounded-full border-2 border-gray-300"
                                     style={{ backgroundColor: newCategoryColor }}
                                     title="Choisir une couleur"
                                   ></div>
-                                </label>
+                                </div>
                               </div>
                             </div>
                             <label className="flex items-center gap-2 cursor-pointer">
@@ -2267,12 +2314,51 @@
                     <form onSubmit={handleAddDepense} className="space-y-4">
                       <div>
                         <label className={`mb-1 block text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>Catégorie</label>
-                        <select value={newDepense.categorie} onChange={(e) => setNewDepense({...newDepense, categorie: e.target.value})} className={`w-full rounded-xl border px-4 py-3 focus:outline-none focus:ring-2 ${darkMode ? "bg-gray-700 border-gray-600 text-white focus:border-indigo-400 focus:ring-indigo-500/50" : "border-gray-300 focus:border-indigo-500 focus:ring-indigo-200"}`}>
-                          {Object.entries(monthlyBudget.categories).map(([key, cat]) => (
-                            <option key={key} value={key}>{cat.nom}</option>
-                          ))}
-                          <option value="exceptionnel">Charge exceptionnelle</option>
-                          <option value="depense">Dépense</option>
+                        <select 
+                          value={newDepense.categorie} 
+                          onChange={(e) => setNewDepense({...newDepense, categorie: e.target.value})} 
+                          className={`w-full rounded-xl border px-4 py-3 text-base focus:outline-none focus:ring-2 ${
+                            darkMode 
+                              ? "bg-gray-700 border-gray-600 text-white focus:border-indigo-400 focus:ring-indigo-500/50" 
+                              : "border-gray-300 focus:border-indigo-500 focus:ring-indigo-200"
+                          }`}
+                        >
+                          <optgroup label="📊 Catégories principales">
+                            {Object.entries(monthlyBudget.categories)
+                              .filter(([key, cat]) => cat.showInDashboard)
+                              .sort(([keyA], [keyB]) => {
+                                const categoriesDeBase = ['copine', 'perso', 'pea', 'crypto'];
+                                const indexA = categoriesDeBase.indexOf(keyA);
+                                const indexB = categoriesDeBase.indexOf(keyB);
+                                if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+                                if (indexA !== -1) return -1;
+                                if (indexB !== -1) return 1;
+                                return keyA.localeCompare(keyB);
+                              })
+                              .map(([key, cat]) => (
+                                <option key={key} value={key}>
+                                  {cat.nom} (Budget: {formatMoney(cat.budget)})
+                                </option>
+                              ))}
+                          </optgroup>
+                          
+                          {Object.entries(monthlyBudget.categories).filter(([key, cat]) => !cat.showInDashboard).length > 0 && (
+                            <optgroup label="📁 Autres catégories">
+                              {Object.entries(monthlyBudget.categories)
+                                .filter(([key, cat]) => !cat.showInDashboard)
+                                .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
+                                .map(([key, cat]) => (
+                                  <option key={key} value={key}>
+                                    {cat.nom} (Budget: {formatMoney(cat.budget)})
+                                  </option>
+                                ))}
+                            </optgroup>
+                          )}
+                          
+                          <optgroup label="💰 Dépenses diverses">
+                            <option value="exceptionnel">Charge exceptionnelle</option>
+                            <option value="depense">Autre dépense</option>
+                          </optgroup>
                         </select>
                       </div>
                       
